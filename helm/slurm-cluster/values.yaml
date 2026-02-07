@@ -156,7 +156,7 @@ slurmConfig:
   maxJobCount: 20000
   minJobAge: 28800
   messageTimeout: 60
-  topologyPlugin: "topology/tree"
+  topologyPlugin: "topology/none"
   topologyParam: "SwitchAsNodeRank"
 customSlurmConfig: ""
 customCgroupConfig: ""
@@ -168,7 +168,7 @@ plugStackConfig:
     containerImageSave: "/var/cache/enroot-container-images/"
   ncclDebug:
     required: false
-    enabled: true
+    enabled: false
     logLevel: "INFO"
     outputToFile: true
     outputToStdOut: false
