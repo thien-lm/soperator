@@ -426,7 +426,10 @@ docker-build-go-base: ## Build go-base manifest locally (use PLATFORMS=linux/amd
 		-t go-base \
 		-f images/common/go-base.dockerfile \
 		--progress=plain \
+		--network=host \
 		$(DOCKER_BUILD_ARGS) \
+		--no-cache \
+		--load \		
 		.
 
 .PHONY: docker-build-and-push
@@ -448,6 +451,8 @@ endif
 		--build-arg SLURM_VERSION="${SLURM_VERSION}" \
 		--progress=plain \
 		--push \
+		--network=host \
+		--load \
 		$(DOCKER_BUILD_ARGS) \
 		.
 ifeq ($(UNSTABLE), false)

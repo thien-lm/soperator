@@ -1,4 +1,4 @@
-clusterName: "slurm1"
+clusterName: "fpt-hpc"
 # Additional annotations for the cluster
 annotations: {}
 # Add appArmor profile to the cluster
@@ -79,10 +79,10 @@ k8sNodeFilters:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-                - key: "nebius.com/node-group-id"
+                - key: "worker.fptcloud/type"
                   operator: In
                   values:
-                    - "node-group-id-here"
+                    - "gpu"
     tolerations:
       - key: nvidia.com/gpu
         operator: Exists
@@ -93,10 +93,10 @@ k8sNodeFilters:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-                - key: "nebius.com/node-group-id"
+                - key: "worker.fptcloud/type"
                   operator: In
                   values:
-                    - "node-group-id-here"
+                    - "gpu"
 # Sources for the volumes used in Slurm node specifications
 # You can use existing pvc or create via helm if `createPVC: true`
 volumeSources:
@@ -182,7 +182,7 @@ plugStackConfig:
 
 slurmNodes:
   accounting:
-    enabled: false
+    enabled: true
     k8sNodeFilterName: "no-gpu"
     # Controls if the pod containers can use the host user namespace
     # hostUsers: false
@@ -242,7 +242,7 @@ slurmNodes:
       # storageParameters:
       #   SSL_CIPHER: ""
     mariadbOperator:
-      enabled: false
+      enabled: true
       protectedSecret: false
       resources:
         cpu: "1000m"
@@ -255,7 +255,15 @@ slurmNodes:
       # probesEnabled: false
       # replica: {}
       # syncBinlog: false
-      storage: {}
+      storage:
+        ephemeral: false
+        volumeClaimTemplate:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi
+          storageClassName: Premium-ssd
       # ephemeral: false
       # resizeInUseVolumes: false
       # size: {}
@@ -344,7 +352,7 @@ slurmNodes:
           resources:
             requests:
               storage: 50Gi
-          storageClassName: "compute-csi-network-ssd-ext4"
+          storageClassName: "Premium-ssd"
       jail:
         volumeSourceName: "jail"
       customMounts: []
@@ -372,9 +380,9 @@ slurmNodes:
         - name: "NVIDIA_DRIVER_CAPABILITIES"
           value: "compute,utility,video"
       resources:
-        cpu: "156000m"
-        memory: "1220Gi"
-        ephemeralStorage: "55Gi"
+        cpu: "110000m"
+        memory: "1920Gi"
+        ephemeralStorage: "20000Gi"
         gpu: 8
       securityLimitsConfig: ""
     munge:
@@ -390,7 +398,7 @@ slurmNodes:
     volumes:
       spool:
         volumeClaimTemplateSpec:
-          storageClassName: "nebius-network-ssd"
+          storageClassName: "Premium-ssd"
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
@@ -506,7 +514,7 @@ slurmNodes:
       jail:
         volumeSourceName: "jail"
   rest:
-    enabled: false
+    enabled: true
     size: 2
     k8sNodeFilterName: "no-gpu"
     # Controls if the pod containers can use the host user namespace
@@ -581,67 +589,67 @@ slurmScripts:
   # Keys must match file names in slurm_scripts/
   builtIn:
     alloc_gpus_busy.drain.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     alloc_gpus_busy.undrain.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     alloc_mem_used.drain.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     alloc_mem_used.undrain.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     boot_disk_full.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     chmod_enroot_layers.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     cleanup_enroot.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     cleanup_scratch_data.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     drop_page_cache.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     drop_posix_shmem.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     gpu_health_check.py:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     job_tmpfs_delete.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     job_tmpfs_delete_leftover.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     job_tmpfs_recreate.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     map_job_dcgm.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     unmap_job_dcgm.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
   extra: null
