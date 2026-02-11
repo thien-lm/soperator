@@ -47,11 +47,11 @@ VERSION		= $(VERSION_BASE)
 
 CUDA_VERSION                ?= 12.9.0
 
-IMAGE_VERSION			= $(VERSION)-$(UBUNTU_VERSION)-slurm$(SLURM_VERSION)
-GO_CONST_VERSION_FILE	= internal/consts/version.go
-GITHUB_REPO				= ghcr.io/nebius/soperator
-NEBIUS_REPO				= cr.eu-north1.nebius.cloud/soperator
-IMAGE_REPO				= $(NEBIUS_REPO)
+IMAGE_VERSION		  = $(VERSION)-$(UBUNTU_VERSION)-slurm$(SLURM_VERSION)
+GO_CONST_VERSION_FILE = internal/consts/version.go
+GITHUB_REPO			  = docker.io/thienlm204608/soperator
+NEBIUS_REPO			  = cr.eu-north1.nebius.cloud/soperator
+IMAGE_REPO			  = $(GITHUB_REPO)
 
 # For version sync test
 VALUES_VERSION		= $(shell $(YQ) '.images.slurmctld' helm/slurm-cluster/values.yaml | awk -F':' '{print $$2}' | awk -F'-' '{print $$1}')

@@ -4,39 +4,35 @@ on:
   workflow_call:
     inputs:
       unstable:
-        description: "Build unstable version"
+        description: 'Build unstable version'
         type: string
         required: false
-        default: "true"
-      multi_arch:
-        description: "Build for both amd64 and arm64 platforms"
-        type: string
-        required: false
-        default: "false"
-
-  workflow_dispatch:
-    inputs:
-      unstable:
-        description: "Build unstable version"
-        type: string
-        required: false
-        default: "true"
-      multi_arch:
-        description: "Build for both amd64 and arm64 platforms"
-        type: string
-        required: false
-        default: "false"
+        default: 'true'
 
   push:
     branches:
       - main
       - soperator-release-*
     tags:
-      - "**" # Trigger on any tag
+      - '**'  # Trigger on any tag
+    paths-ignore:
+      - 'docs/**'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+      - 'PROJECT'
+      - 'README.md'
+      - 'SECURITY.md'
 
   # pull_request are defined separately to allow to run CI from forks.
   pull_request:
     types: [opened, synchronize, reopened]
+    paths-ignore:
+      - 'docs/**'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+      - 'PROJECT'
+      - 'README.md'
+      - 'SECURITY.md'
 
 permissions:
   contents: read
@@ -49,44 +45,20 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  changes:
-    name: Detect Changes
-    runs-on: ubuntu-latest
-    outputs:
-      should_build: ${{ steps.filter.outputs.has_code_changes == 'true' || github.event_name != 'pull_request' }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          predicate-quantifier: 'every'
-          filters: |
-            has_code_changes:
-              - '**'
-              - '!docs/**'
-              - '!CODEOWNERS'
-              - '!LICENSE'
-              - '!PROJECT'
-              - '!README.md'
-              - '!SECURITY.md'
-
   pre-build:
-    needs: [changes]
-    if: needs.changes.outputs.should_build == 'true'
     runs-on:
-      - self-hosted
-      - build
+      - ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
-          fetch-depth: 0 # Fetch git history for the VERSION file changes detection
+          fetch-depth: 0  # Fetch git history for the VERSION file changes detection
 
       - name: Install GO
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version-file: "go.mod"
+          go-version-file: 'go.mod'
           cache: false
 
       - name: Generate version file
@@ -97,7 +69,105 @@ jobs:
           make get-version UNSTABLE=${UNSTABLE} >> version.txt
           echo "${UNSTABLE}" >> version.txt
 
-      - name: Run make sync-version-from-scratch
+      - name: Upload version file
+        uses: actions/upload-artifact@v4
+        with:
+          name: version
+          path: version.txt
+
+      - name: Download version artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: version
+          path: ./version
+
+      - name: Read version and unstable
+        id: read-version
+        run: |
+          VERSION=$(sed -n '1p' ./version/version.txt)
+          UNSTABLE=$(sed -n '2p' ./version/version.txt)
+          
+          echo "Version: $VERSION"
+          echo "Unstable: $UNSTABLE"
+
+  # lint:
+  #   runs-on:
+  #     - ubuntu-latest
+
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+  #     - name: Install GO
+  #       uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+  #       with:
+  #         go-version-file: 'go.mod'
+  #         cache: false
+
+  #     # These steps are not a matrix to avoid allocating 3 jobs on runners for something this small
+  #     - name: golangci-lint on linux/amd64
+  #       uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7
+  #       with:
+  #         version: v2.0.2 # version of golangci-lint, should be in sync with Makefile.
+  #       env:
+  #         GOEXPERIMENT: synctest
+  #         GOARCH: amd64
+  #         GOOS: linux
+  #     - name: golangci-lint on linux/arm64
+  #       uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7
+  #       with:
+  #         version: v2.0.2 # version of golangci-lint, should be in sync with Makefile.
+  #       env:
+  #         GOEXPERIMENT: synctest
+  #         GOARCH: arm64
+  #         GOOS: linux
+  #     - name: golangci-lint on darwin/arm64
+  #       uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7
+  #       with:
+  #         version: v2.0.2 # version of golangci-lint, should be in sync with Makefile.
+  #       env:
+  #         GOEXPERIMENT: synctest
+  #         GOARCH: arm64
+  #         GOOS: darwin
+
+  build:
+    runs-on:
+      - ubuntu-latest
+    needs: pre-build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Install GO
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      - name: Download version artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: version
+          path: ./version
+
+      - name: Read version and unstable
+        id: read-version
+        run: |
+          VERSION=$(sed -n '1p' ./version/version.txt)
+          UNSTABLE=$(sed -n '2p' ./version/version.txt)
+          
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "unstable=$UNSTABLE" >> "$GITHUB_OUTPUT"
+          
+          echo "Version: $VERSION"
+          echo "Unstable: $UNSTABLE"
+
+      - name: Debug VERSION and UNSTABLE vars
+        run: |
+          echo "Building version ${{ steps.read-version.outputs.version }}" 
+          echo "Unstable: ${{ steps.read-version.outputs.unstable }}"
+
+      - name: Run make sync-version-from-scratch # Every time we should have only stable version in our code. So UNSTABLE=false here
         run: |
           make kustomize helmify yq
           make sync-version-from-scratch UNSTABLE=false
@@ -111,121 +181,21 @@ jobs:
             exit 1
           fi
 
-      - name: Upload version file
-        uses: actions/upload-artifact@v6
+      - name: Run Helm Tests
+        run: make helmtest
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          name: version
-          path: version.txt
-
-      - name: Download version artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: version
-          path: ./version
-
-      - name: Read version and unstable
-        id: read-version
-        run: |
-          VERSION=$(sed -n '1p' ./version/version.txt)
-          UNSTABLE=$(sed -n '2p' ./version/version.txt)
-          echo "Version: $VERSION"
-          echo "Unstable: $UNSTABLE"
-
-  lint:
-    needs: [changes]
-    if: needs.changes.outputs.should_build == 'true'
-    runs-on:
-      - self-hosted
-      - build
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
-      - name: Install GO
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: "go.mod"
-          cache: false
-
-      # These steps are not a matrix to avoid allocating 3 jobs on runners for something this small
-      - name: golangci-lint on linux/amd64
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7
-        with:
-          version: v2.5.0 # version of golangci-lint, should be in sync with Makefile.
-        env:
-          GOARCH: amd64
-          GOOS: linux
-      - name: golangci-lint on linux/arm64
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7
-        with:
-          version: v2.5.0 # version of golangci-lint, should be in sync with Makefile.
-        env:
-          GOARCH: arm64
-          GOOS: linux
-      - name: golangci-lint on darwin/arm64
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7
-        with:
-          version: v2.5.0 # version of golangci-lint, should be in sync with Makefile.
-        env:
-          GOARCH: arm64
-          GOOS: darwin
-
-  build-docker-images:
-    needs: [changes, pre-build]
-    if: needs.changes.outputs.should_build == 'true'
-    runs-on:
-      - self-hosted
-      - X64
-      - build
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
-      - name: Install GO
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: "go.mod"
-          cache: false
-
-      - name: Download version artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: version
-          path: ./version
-
-      - name: Read version and unstable
-        id: read-version
-        run: |
-          VERSION=$(sed -n '1p' ./version/version.txt)
-          UNSTABLE=$(sed -n '2p' ./version/version.txt)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "unstable=$UNSTABLE" >> "$GITHUB_OUTPUT"
-          echo "Version: $VERSION"
-          echo "Unstable: $UNSTABLE"
-
-      - name: Log in to the Github Container registry
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Build and push Docker images
-        shell: bash
+      - name: Build all images
         run: |
           UNSTABLE=${{ steps.read-version.outputs.unstable }}
-          MULTI_ARCH="${{ inputs.multi_arch || 'false' }}"
-          if [[ "$MULTI_ARCH" == "true" ]]; then
-            export PLATFORMS="linux/amd64,linux/arm64"
-          else
-            export PLATFORMS="linux/amd64"
-          fi
-          echo "Building for platforms: ${PLATFORMS}"
-
           IMAGE_VERSION="$(make get-image-version UNSTABLE=${UNSTABLE})"
           VERSION=$(make get-version UNSTABLE=${UNSTABLE})
           OPERATOR_IMAGE_TAG=$(make get-operator-tag-version UNSTABLE=${UNSTABLE})
@@ -236,16 +206,15 @@ jobs:
             --cache-from=type=local,src=/mnt/shared-fs/docker/soperator-build-3 \
             --cache-to=type=local,dest=/mnt/shared-fs/docker/${{ runner.name }},mode=max \
           "
-          NFS_VERSION=$(make get-nfs-version UNSTABLE=${UNSTABLE})
 
           make sync-version UNSTABLE=${UNSTABLE}
 
           echo "Updating CRDs & auto-generated code (included in test step) & run tests"
           make test-coverage UNSTABLE="${UNSTABLE}"
-
+          
           echo "Building local go base image"
           make docker-build-go-base DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}"
-
+          
           echo "Building and pushing image of the soperatorchecks ${OPERATOR_IMAGE_TAG}"
           make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=soperatorchecks DOCKERFILE=soperatorchecks/soperatorchecks.dockerfile IMAGE_VERSION="${OPERATOR_IMAGE_TAG}"
 
@@ -266,9 +235,13 @@ jobs:
 
           echo "Building and pushing image of the controller_slurmdbd ${IMAGE_VERSION}"
           make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=controller_slurmdbd DOCKERFILE=accounting/slurmdbd.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
-
+          
           echo "Building and pushing image of the slurmrestd ${IMAGE_VERSION}"
           make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=slurmrestd DOCKERFILE=restd/slurmrestd.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
+          
+          # TODO: Remove after soperator-exporter is finished
+          echo "Building and pushing image of the exporter ${IMAGE_VERSION}"
+          make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=exporter DOCKERFILE=exporter/exporter.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
 
           echo "Building and pushing image of the soperator-exporter ${IMAGE_VERSION}"
           make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=soperator-exporter DOCKERFILE=soperator-exporter/soperator-exporter.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
@@ -279,226 +252,25 @@ jobs:
           echo "Building and pushing image of the k8s_check_job ${IMAGE_VERSION}"
           make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=k8s_check_job DOCKERFILE=k8s_check_job/k8s_check_job.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
 
-          echo "Building and pushing image of the sansible ${IMAGE_VERSION}"
-          make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=sansible DOCKERFILE=sansible/sansible.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
-
           echo "Building and pushing image of the login_sshd ${IMAGE_VERSION}"
           make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=login_sshd DOCKERFILE=login/sshd.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
 
           echo "Building and pushing image of the worker_slurmd ${IMAGE_VERSION}"
           make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=worker_slurmd DOCKERFILE=worker/slurmd.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
 
-          echo "Building and pushing image of the nfs-server ${NFS_VERSION}"
-          make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=nfs-server DOCKERFILE=nfs-server/nfs.dockerfile IMAGE_VERSION=${NFS_VERSION}
+          echo "Common images were built"
 
           echo "Removing previous jail rootfs tar archive"
           rm -f images/jail_rootfs*.tar
 
-          CUDA_VERSIONS=("12.9.0" "13.0.2")
+          echo "Building tarball for jail"
+          make docker-build-jail DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_VERSION=${IMAGE_VERSION}
 
-          for CUDA_VERSION in "${CUDA_VERSIONS[@]}"; do
-            CUDA_TAG="cuda${CUDA_VERSION}"
-
-            echo "Building tarball for jail (${CUDA_TAG})"
-            make docker-build-jail DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_VERSION=${IMAGE_VERSION} CUDA_VERSION="${CUDA_VERSION}"
-
-            echo "Building and pushing image of the populate_jail ${IMAGE_VERSION}-${CUDA_TAG}"
-            DOCKER_BUILD_ARGS_WITH_CUDA="${DOCKER_BUILD_ARGS} --build-arg CUDA_VERSION=${CUDA_VERSION}"
-            make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS_WITH_CUDA}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=populate_jail DOCKERFILE=populate_jail/populate_jail.dockerfile IMAGE_VERSION="${IMAGE_VERSION}-${CUDA_TAG}"
-          done
+          echo "Building and pushing image of the populate_jail ${IMAGE_VERSION}"
+          make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=populate_jail DOCKERFILE=populate_jail/populate_jail.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
 
           echo "Removing jail rootfs tar archive to speedup further docker builds."
           rm -f images/jail_rootfs*.tar
 
-  build-helm-charts:
-    needs: [changes, pre-build]
-    if: needs.changes.outputs.should_build == 'true'
-    runs-on:
-      - self-hosted
-      - X64
-      - build
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
-      - name: Install GO
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: "go.mod"
-          cache: false
-
-      - name: Download version artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: version
-          path: ./version
-
-      - name: Read version and unstable
-        id: read-version
-        run: |
-          VERSION=$(sed -n '1p' ./version/version.txt)
-          UNSTABLE=$(sed -n '2p' ./version/version.txt)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "unstable=$UNSTABLE" >> "$GITHUB_OUTPUT"
-          echo "Version: $VERSION"
-          echo "Unstable: $UNSTABLE"
-
-      - name: Run Helm Tests
-        run: make helmtest
-
-      - name: Push Helm charts
-        run: |
-          UNSTABLE=${{ steps.read-version.outputs.unstable }}
-
-          make sync-version UNSTABLE=${UNSTABLE}
-
-          make release-helm UNSTABLE="${UNSTABLE}"
-
-  helm-integration-test:
-    name: Helm Chart Integration Test with Built Images
-    needs: [changes, build-docker-images, build-helm-charts]
-    if: needs.changes.outputs.should_build == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: "go.mod"
-          cache: true
-
-      - name: Download version artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: version
-          path: ./version
-
-      - name: Read version and unstable
-        id: read-version
-        run: |
-          VERSION=$(sed -n '1p' ./version/version.txt)
-          UNSTABLE=$(sed -n '2p' ./version/version.txt)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "unstable=$UNSTABLE" >> "$GITHUB_OUTPUT"
-          echo "Version: $VERSION"
-          echo "Unstable: $UNSTABLE"
-
-      - name: Install dependencies
-        run: |
-          go mod download
-          go mod verify
-
-      - name: Install kind
-        run: make install-kind
-
-      - name: Install flux
-        run: make install-flux
-
-      - name: Install yq
-        run: make yq
-
-      - name: Run Helm Integration Tests
-        run: |
-          UNSTABLE=${{ steps.read-version.outputs.unstable }}
-          make sync-version UNSTABLE=${UNSTABLE}
-          go test -v -timeout 10m -tags=integration ./test/integration/
-        env:
-          GO111MODULE: on
-          UNSTABLE: ${{ steps.read-version.outputs.unstable }}
-
-      - name: Get cluster info
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p ./cluster-info
-          kubectl cluster-info dump --output-directory=./cluster-info || true
-          echo "=== Pods ==="
-          kubectl get pods -A -o wide || true
-          echo "=== HelmReleases ==="
-          kubectl get helmreleases -n flux-system || true
-          echo "=== Flux Resources ==="
-          ./bin/flux get all -n flux-system || true
-
-      - name: Cleanup
-        if: always()
-        run: |
-          make kind-delete || true
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: helm-integration-test-results
-          path: |
-            test/integration/*.log
-            test/integration/*.xml
-            cluster-info/
-          retention-days: 1
-
-  ci-success:
-    name: CI Success
-    runs-on: ubuntu-latest
-    needs:
-      - changes
-      - pre-build
-      - lint
-      - build-docker-images
-      - build-helm-charts
-      - helm-integration-test
-    if: always()
-    steps:
-      - name: Check CI status
-        shell: bash
-        run: |
-          # If build was skipped (PR with no code changes), that's OK
-          if [[ "${{ needs.changes.outputs.should_build }}" != "true" ]]; then
-            echo "No code changes in PR - CI skipped successfully"
-            exit 0
-          fi
-
-          # Otherwise, check that all jobs passed
-          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
-            echo "Some jobs failed"
-            exit 1
-          fi
-          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
-            echo "Some jobs were cancelled"
-            exit 1
-          fi
-          echo "All CI jobs passed!"
-
-  notify-failure:
-    name: Notify Slack on failure
-    needs: [ci-success]
-    if: |
-      always() &&
-      github.event_name == 'workflow_dispatch' &&
-      (needs.ci-success.result == 'failure' || needs.ci-success.result == 'cancelled')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send Slack notification
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        shell: bash
-        run: |
-          STATUS="${{ needs.ci-success.result }}"
-          if [[ "$STATUS" == "failure" ]]; then
-            EMOJI=":x:"
-            COLOR="danger"
-          else
-            EMOJI=":warning:"
-            COLOR="warning"
-          fi
-
-          curl -X POST "$SLACK_WEBHOOK_URL" \
-            -H 'Content-type: application/json' \
-            --data "{
-              \"attachments\": [{
-                \"color\": \"${COLOR}\",
-                \"title\": \"${EMOJI} Nightly Build ${STATUS}\",
-                \"text\": \"Branch: ${{ github.ref_name }}\nWorkflow: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>\",
-                \"footer\": \"soperator nightly build\"
-              }]
-            }"
+          echo "Pushing Helm charts"
+          make release-helm UNSTABLE="${UNSTABLE}" OPERATOR_IMAGE_TAG="$OPERATOR_IMAGE_TAG"

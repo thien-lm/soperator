@@ -22,9 +22,7 @@ concurrency:
 
 jobs:
   e2e-test:
-    runs-on:
-      - self-hosted
-      - e2e-tests # We have a single runner with this label => only 1 job at a time.
+    runs-on: ubuntu-latest
 
     environment: e2e
 
