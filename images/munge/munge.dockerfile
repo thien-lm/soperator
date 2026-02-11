@@ -1,4 +1,4 @@
-# syntax=docker.io/dockerfile-upstream:1.20.0
+# syntax=docker.io/docker/dockerfile-upstream:1.20.0
 
 # https://github.com/nebius/ml-containers/pull/56
 FROM cr.eu-north1.nebius.cloud/ml-containers/neubuntu:noble-20260206131521 AS munge

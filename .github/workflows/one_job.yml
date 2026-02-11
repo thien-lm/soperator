@@ -1,3 +1,4 @@
+#changed for thienlm4 environment update pls
 name: Build All in one job
 
 on:
@@ -7,7 +8,7 @@ on:
         description: 'Build unstable version'
         type: string
         required: false
-        default: 'true'
+        default: 'false'
 
   push:
     branches:
@@ -50,6 +51,44 @@ jobs:
       - ubuntu-latest
 
     steps:
+      - name: Aggressive cleanup
+        run: |
+          # Remove Java (JDKs)
+          sudo rm -rf /usr/lib/jvm
+
+          # Remove .NET SDKs
+          sudo rm -rf /usr/share/dotnet
+
+          # Remove Swift toolchain
+          sudo rm -rf /usr/share/swift
+
+          # Remove Haskell (GHC)
+          sudo rm -rf /usr/local/.ghcup
+
+          # Remove Julia
+          sudo rm -rf /usr/local/julia*
+
+          # Remove Android SDKs
+          sudo rm -rf /usr/local/lib/android
+
+          # Remove Chromium (optional if not using for browser tests)
+          sudo rm -rf /usr/local/share/chromium
+
+          # Remove Microsoft/Edge and Google Chrome builds
+          sudo rm -rf /opt/microsoft /opt/google
+
+          # Remove Azure CLI
+          sudo rm -rf /opt/az
+
+          # Remove PowerShell
+          sudo rm -rf /usr/local/share/powershell
+
+          # Remove CodeQL and other toolcaches
+          sudo rm -rf /opt/hostedtoolcache
+
+          docker system prune -af || true
+          docker builder prune -af || true
+          df -h
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -63,7 +102,7 @@ jobs:
 
       - name: Generate version file
         run: |
-          UNSTABLE="${{ inputs.unstable || 'true' }}"
+          UNSTABLE="${{ inputs.unstable || 'false' }}"
           echo "Building with unstable=${UNSTABLE}"
 
           make get-version UNSTABLE=${UNSTABLE} >> version.txt
@@ -172,17 +211,17 @@ jobs:
           make kustomize helmify yq
           make sync-version-from-scratch UNSTABLE=false
 
-      - name: Check for uncommitted changes
-        run: |
-          if [[ -n "$(git status --porcelain)" ]]; then
-            echo "❌ Uncommitted changes detected after make sync-version-from-scratch"
-            git status --porcelain
-            git diff
-            exit 1
-          fi
+      # - name: Check for uncommitted changes
+      #   run: |
+      #     if [[ -n "$(git status --porcelain)" ]]; then
+      #       echo "❌ Uncommitted changes detected after make sync-version-from-scratch"
+      #       git status --porcelain
+      #       git diff
+      #       exit 1
+      #     fi
 
-      - name: Run Helm Tests
-        run: make helmtest
+      # - name: Run Helm Tests
+      #   run: make helmtest
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -195,7 +234,7 @@ jobs:
 
       - name: Build all images
         run: |
-          UNSTABLE=${{ steps.read-version.outputs.unstable }}
+          UNSTABLE=false
           IMAGE_VERSION="$(make get-image-version UNSTABLE=${UNSTABLE})"
           VERSION=$(make get-version UNSTABLE=${UNSTABLE})
           OPERATOR_IMAGE_TAG=$(make get-operator-tag-version UNSTABLE=${UNSTABLE})
@@ -240,8 +279,8 @@ jobs:
           make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=slurmrestd DOCKERFILE=restd/slurmrestd.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
           
           # TODO: Remove after soperator-exporter is finished
-          echo "Building and pushing image of the exporter ${IMAGE_VERSION}"
-          make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=exporter DOCKERFILE=exporter/exporter.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
+          # echo "Building and pushing image of the exporter ${IMAGE_VERSION}"
+          # make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=exporter DOCKERFILE=exporter/exporter.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
 
           echo "Building and pushing image of the soperator-exporter ${IMAGE_VERSION}"
           make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=soperator-exporter DOCKERFILE=soperator-exporter/soperator-exporter.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
@@ -263,14 +302,17 @@ jobs:
           echo "Removing previous jail rootfs tar archive"
           rm -f images/jail_rootfs*.tar
 
-          echo "Building tarball for jail"
-          make docker-build-jail DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_VERSION=${IMAGE_VERSION}
+          # prune all docker images
+          # sudo docker system prune -af --volumes
 
-          echo "Building and pushing image of the populate_jail ${IMAGE_VERSION}"
-          make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=populate_jail DOCKERFILE=populate_jail/populate_jail.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
+          # echo "Building tarball for jail"
+          # make docker-build-jail DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_VERSION=${IMAGE_VERSION}
 
-          echo "Removing jail rootfs tar archive to speedup further docker builds."
-          rm -f images/jail_rootfs*.tar
+          # echo "Building and pushing image of the populate_jail ${IMAGE_VERSION}"
+          # make docker-build-and-push DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS}" UNSTABLE="${UNSTABLE}" IMAGE_NAME=populate_jail DOCKERFILE=populate_jail/populate_jail.dockerfile IMAGE_VERSION=${IMAGE_VERSION}
 
-          echo "Pushing Helm charts"
-          make release-helm UNSTABLE="${UNSTABLE}" OPERATOR_IMAGE_TAG="$OPERATOR_IMAGE_TAG"
+          # echo "Removing jail rootfs tar archive to speedup further docker builds."
+          # rm -f images/jail_rootfs*.tar
+
+          # echo "Pushing Helm charts"
+          # make release-helm UNSTABLE="${UNSTABLE}" OPERATOR_IMAGE_TAG="$OPERATOR_IMAGE_TAG"

@@ -49,8 +49,8 @@ CUDA_VERSION                ?= 12.9.0
 
 IMAGE_VERSION		  = $(VERSION)-$(UBUNTU_VERSION)-slurm$(SLURM_VERSION)
 GO_CONST_VERSION_FILE = internal/consts/version.go
-GITHUB_REPO			  = docker.io/thienlm204608/soperator
-NEBIUS_REPO			  = cr.eu-north1.nebius.cloud/soperator
+GITHUB_REPO			  = docker.io/thienlm204608
+NEBIUS_REPO			  = docker.io/thienlm204608
 IMAGE_REPO			  = $(GITHUB_REPO)
 
 # For version sync test
@@ -67,16 +67,16 @@ else
     SED_COMMAND = sed -i -e
 endif
 
-ifeq ($(UNSTABLE), true)
-    # "r" prefix ensures SHORT_SHA is alphanumeric, not purely numeric.
-    # SemVer forbids leading zeros in numeric pre-release identifiers (e.g., "1.0.0-01234" is invalid).
-    SHORT_SHA			= r$(shell git rev-parse --short=8 HEAD)
-    VERSION				= $(VERSION_BASE)-$(SHORT_SHA)
-    OPERATOR_IMAGE_TAG	= $(VERSION_BASE)-$(SHORT_SHA)
-    IMAGE_VERSION		= $(VERSION_BASE)-$(UBUNTU_VERSION)-slurm$(SLURM_VERSION)-$(SHORT_SHA)
-    NFS_VERSION			= $(NFS_VERSION_BASE)-$(SHORT_SHA)
-    IMAGE_REPO			= $(NEBIUS_REPO)-unstable
-endif
+#ifeq ($(UNSTABLE), true)
+#    # "r" prefix ensures SHORT_SHA is alphanumeric, not purely numeric.
+#    # SemVer forbids leading zeros in numeric pre-release identifiers (e.g., "1.0.0-01234" is invalid).
+#    SHORT_SHA			= r$(shell git rev-parse --short=8 HEAD)
+#    VERSION				= $(VERSION_BASE)-$(SHORT_SHA)
+#    OPERATOR_IMAGE_TAG	= $(VERSION_BASE)-$(SHORT_SHA)
+#    IMAGE_VERSION		= $(VERSION_BASE)-$(UBUNTU_VERSION)-slurm$(SLURM_VERSION)-$(SHORT_SHA)
+#    NFS_VERSION			= $(NFS_VERSION_BASE)-$(SHORT_SHA)
+#    IMAGE_REPO			= $(NEBIUS_REPO)-unstable
+#endif
 
 # Docker build platforms (default: amd64 only, override with PLATFORMS=linux/amd64,linux/arm64 for multi-arch)
 PLATFORMS ?= linux/amd64
@@ -427,9 +427,8 @@ docker-build-go-base: ## Build go-base manifest locally (use PLATFORMS=linux/amd
 		-f images/common/go-base.dockerfile \
 		--progress=plain \
 		--network=host \
-		$(DOCKER_BUILD_ARGS) \
 		--no-cache \
-		--load \		
+		--load \
 		.
 
 .PHONY: docker-build-and-push
@@ -446,23 +445,22 @@ endif
 	docker buildx build \
 		--platform $(PLATFORMS) \
 		--target ${IMAGE_NAME} \
-		-t "$(NEBIUS_REPO)-unstable/${IMAGE_NAME}:${IMAGE_VERSION}" \
+		-t "$(NEBIUS_REPO)/${IMAGE_NAME}:${IMAGE_VERSION}" \
 		-f images/${DOCKERFILE} \
 		--build-arg SLURM_VERSION="${SLURM_VERSION}" \
 		--progress=plain \
 		--push \
 		--network=host \
 		--load \
-		$(DOCKER_BUILD_ARGS) \
 		.
 ifeq ($(UNSTABLE), false)
 # Push to the Nebius stable registry
 	skopeo copy --all \
-		docker://"$(IMAGE_REPO)-unstable/${IMAGE_NAME}:${IMAGE_VERSION}" \
+		docker://"$(IMAGE_REPO)/${IMAGE_NAME}:${IMAGE_VERSION}" \
 		docker://"$(IMAGE_REPO)/${IMAGE_NAME}:${IMAGE_VERSION}"
 # Push to the Github registry
 	skopeo copy --all \
-		docker://"$(IMAGE_REPO)-unstable/${IMAGE_NAME}:${IMAGE_VERSION}" \
+		docker://"$(IMAGE_REPO)/${IMAGE_NAME}:${IMAGE_VERSION}" \
 		docker://"$(GITHUB_REPO)/${IMAGE_NAME}:${IMAGE_VERSION}"
 endif
 
@@ -482,7 +480,6 @@ ifneq ($(HAS_AMD64),)
 		--build-arg CUDA_VERSION="${CUDA_VERSION}" \
 		--output type=tar,dest=images/jail_rootfs_cuda$(CUDA_VERSION)_amd64.tar \
 		--progress=plain \
-		$(DOCKER_BUILD_ARGS) \
 		.
 endif
 ifneq ($(HAS_ARM64),)
@@ -495,7 +492,6 @@ ifneq ($(HAS_ARM64),)
 		--build-arg CUDA_VERSION="${CUDA_VERSION}" \
 		--output type=tar,dest=images/jail_rootfs_cuda$(CUDA_VERSION)_arm64.tar \
 		--progress=plain \
-		$(DOCKER_BUILD_ARGS) \
 		.
 endif
 
