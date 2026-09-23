@@ -240,7 +240,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "group(\n    kube_node_labels{label_nebius_com_gpu_name!=\"\"}\n) by (label_nebius_com_gpu_name)",
+          "expr": "group(\n    kube_node_labels{label_worker_fptcloud_pool!=\"\"}\n) by (label_worker_fptcloud_pool)",
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
@@ -303,7 +303,7 @@
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "count(\n  count by (label_slurm_nebius_ai_nodeset_name) (\n    kube_node_labels{\n      label_nebius_com_gpu_name=~\"GB.*\",\n      label_slurm_nebius_ai_nodeset_name!=\"\"\n    }\n  )\n)",
+          "expr": "count(\n  count by (label_worker_fptcloud_pool) (\n    kube_node_labels{\n      label_worker_fptcloud_pool!=\"\"\n    }\n  )\n)",
           "instant": true,
           "range": false,
           "refId": "A",
@@ -627,7 +627,7 @@
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "count(\n  count by (label_nebius_com_nvlink_instance_group) (\n    kube_node_labels{\n      label_nebius_com_gpu_name=~\"GB.*\",\n      label_nebius_com_nvlink_instance_group!=\"\"\n    }\n  )\n)",
+          "expr": "count(\n  count by (label_worker_fptcloud_pool) (\n    kube_node_labels{\n      label_worker_fptcloud_pool!=\"\"\n    }\n  )\n)",
           "instant": true,
           "range": false,
           "refId": "A",
@@ -6379,7 +6379,7 @@
           "text": ["All"],
           "value": ["$__all"]
         },
-        "definition": "label_values(kube_node_labels{label_nebius_com_gpu_name=~\"GB.*\"},label_slurm_nebius_ai_nodeset_name)",
+        "definition": "label_values(kube_node_labels{label_worker_fptcloud_pool!=\"\"},label_worker_fptcloud_pool)",
         "description": "For GB platforms",
         "includeAll": true,
         "label": "Rack",
@@ -6388,7 +6388,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(kube_node_labels{label_nebius_com_gpu_name=~\"GB.*\"},label_slurm_nebius_ai_nodeset_name)",
+          "query": "label_values(kube_node_labels{label_worker_fptcloud_pool!=\"\"},label_worker_fptcloud_pool)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -6405,7 +6405,7 @@
           "type": "prometheus",
           "uid": "VictoriaMetrics"
         },
-        "definition": "label_values(slurm_node_info{node_name=~\"$rack-.*\"}, node_name)",
+        "definition": "label_values(slurm_node_info, node_name)",
         "description": "",
         "includeAll": true,
         "label": "Worker Node",
@@ -6414,7 +6414,7 @@
         "options": [],
         "query": {
           "qryType": 5,
-          "query": "label_values(slurm_node_info{node_name=~\"$rack-.*\"}, node_name)",
+          "query": "label_values(slurm_node_info, node_name)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,

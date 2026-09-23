@@ -1,0 +1,122 @@
+# Leverage Soperator's JailedConfig mechanism to land job_submit.lua at
+# /etc/slurm/job_submit.lua (i.e. /mnt/jail/etc/slurm/job_submit.lua behind
+# the controller's /etc/slurm symlink) WITHOUT a customMount / bind mount.
+#
+# The sconfigcontroller reconciler watches ALL JailedConfig CRs in the
+# namespace (not just operator-owned ones) and materializes each referenced
+# ConfigMap key into the jail FS, then optionally runs `scontrol reconfigure`.
+# This is the same mechanism the operator uses for slurm.conf / cgroup.conf /
+# mpi.conf / plugstack.conf / gres.conf / custom_slurm.conf (see
+# internal/render/common/configmap.go:50 RenderJailedConfigSlurmConfigs).
+#
+# Prerequisites:
+#   - The sconfigcontroller deployment must be running in the cluster
+#     (it is, by default, in any Soperator install).
+#   - Both resources must be in the SAME namespace as the SlurmCluster.
+#
+# Steps:
+#   1. Put your job_submit.lua in the ConfigMap below (key=job_submit.lua).
+#   2. kubectl -n <ns> apply -f helm/slurm-cluster/examples/job-submit-lua-jailedconfig.yaml
+#   3. Enable the plugin in values.yaml:
+#
+#        customSlurmConfig: |
+#          JobSubmitPlugins=lua
+#
+#   4. helm upgrade -n <ns> slurm-cluster ./helm/slurm-cluster -f values.yaml
+#
+# Why this works (references):
+#   - sconfigcontroller watches every JailedConfig in the namespace:
+#       internal/controller/sconfigcontroller/jailedconfig_controller.go:595-601
+#   - On reconcile it reads spec.configMap, writes each item to
+#     jailPath + <path> (jailPath=/mnt/jail by default):
+#       jailedconfig_controller.go:197-201 (get ConfigMap)
+#       jailedconfig_controller.go:238-268 (makePayload -> write files)
+#   - UpdateActions: [Reconfigure] triggers `scontrol reconfigure` after write:
+#       api/v1alpha1/jailedconfig_types.go:24-32 (UpdateActionReconfigure)
+#   - Path validation only requires absolute paths:
+#       jailedconfig_controller.go:139-144
+#   - NO aggregation label => reconciled as an individual JailedConfig:
+#       jailedconfig_controller.go:178-186
+#
+# NOTE: Do NOT add the `slurm.nebius.ai/jailed-aggregation: common` label
+# here. That label routes the CR through the aggregated reconciler path
+# intended for the operator-managed <cluster>-slurm-configs bundle. A
+# standalone plugin script should use the individual path (no aggregation
+# label), which still gets fully reconciled and reconfigured.
+
+# --- 1. ConfigMap holding the Lua plugin script ---------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: slurm-job-submit-lua
+  # namespace: <your-namespace>
+  labels:
+    app.kubernetes.io/name: slurm-cluster
+    app.kubernetes.io/component: controller
+data:
+  job_submit.lua: |
+    -- Slurm job_submit.lua plugin
+    -- Runs on job submission and job modify via slurmctld.
+    -- Docs: https://slurm.schedmd.com/job_submit_lua.html
+
+    function slurm_job_submit(job_desc, part_list, submit_uid)
+        return _process(job_desc, submit_uid)
+    end
+
+    function slurm_job_modify(job_desc, job_ptr, part_list, modify_uid)
+        return _process(job_desc, modify_uid)
+    end
+
+    function _process(job_desc, uid)
+        -- Example 1: reject jobs that request --mem=0 (whole-node grab).
+        if job_desc.min_memory == 0 then
+            slurm.log_user("Error: please specify --mem explicitly (0 is not allowed)")
+            return slurm.ERROR
+        end
+
+        -- Example 2: audit-log every submission.
+        slurm.log_info(string.format(
+            "job_submit: user=%u account=%s partition=%s job_name=%s nodes=%u",
+            uid,
+            tostring(job_desc.account),
+            tostring(job_desc.partition),
+            tostring(job_desc.name),
+            job_desc.min_nodes
+        ))
+
+        return slurm.SUCCESS
+    end
+
+    function slurm_init()
+        slurm.log_info("job_submit.lua loaded")
+        return slurm.SUCCESS
+    end
+
+    function slurm_fini()
+        slurm.log_info("job_submit.lua unloaded")
+        return slurm.SUCCESS
+    end
+
+# --- 2. JailedConfig materializing the script into the jail ---------------
+# sconfigcontroller reads the ConfigMap above and writes job_submit.lua to
+# /mnt/jail/etc/slurm/job_submit.lua (slurmctld sees it as /etc/slurm/job_submit.lua
+# via the entrypoint symlink). Then it issues `scontrol reconfigure`.
+---
+apiVersion: slurm.nebius.ai/v1alpha1
+kind: JailedConfig
+metadata:
+  name: slurm-job-submit-lua
+  # namespace: <your-namespace>
+  # NO `slurm.nebius.ai/jailed-aggregation` label => individual reconcile path.
+  labels:
+    app.kubernetes.io/name: slurm-cluster
+    app.kubernetes.io/component: controller
+spec:
+  configMap:
+    name: slurm-job-submit-lua            # must match the ConfigMap above
+  items:
+    - key: job_submit.lua                 # ConfigMap key
+      path: /etc/slurm/job_submit.lua       # absolute path inside the jail
+  defaultMode: 0644                       # optional; defaults to 0644
+  updateActions:
+    - Reconfigure                          # call scontrol reconfigure after write

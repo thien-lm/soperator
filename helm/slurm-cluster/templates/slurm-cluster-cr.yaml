@@ -175,6 +175,7 @@ spec:
         enabled: {{ default false .Values.slurmNodes.accounting.externalDB.enabled }}
         host: {{ required ".Values.slurmNodes.accounting.externalDB.host must be provided." .Values.slurmNodes.accounting.externalDB.host | quote }}
         port: {{ required ".Values.slurmNodes.accounting.externalDB.port must be provided." .Values.slurmNodes.accounting.externalDB.port }}
+        user: {{ required ".Values.slurmNodes.accounting.externalDB.user must be provided." .Values.slurmNodes.accounting.externalDB.user | quote }}
         passwordSecretKeyRef:
           name: {{ required ".Values.slurmNodes.accounting.externalDB.passwordSecretKeyRef.name must be provided." .Values.slurmNodes.accounting.externalDB.passwordSecretKeyRef.name | quote }}
           key: {{ required ".Values.slurmNodes.accounting.externalDB.passwordSecretKeyRef.key must be provided." .Values.slurmNodes.accounting.externalDB.passwordSecretKeyRef.key | quote }}

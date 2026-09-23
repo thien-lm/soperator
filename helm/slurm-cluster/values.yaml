@@ -1,4 +1,4 @@
-clusterName: "slurm1"
+clusterName: "fpt-hpc"
 # Additional annotations for the cluster
 annotations: {}
 # Add appArmor profile to the cluster
@@ -20,11 +20,13 @@ partitionConfiguration:
   # - default: generates 3 standard partitions (main, hidden, background)
   # - custom: uses raw partition configuration strings from rawConfig
   # - structured: enables NodeSet references and structured partition definitions
-  configType: "default"
-  # RawConfig defines partition configuration as list of string started with PartitionName.
-  # It is used when configType == "custom".
-  # Example for custom ConfigType:
-  rawConfig: []
+  configType: structured
+  partitions:
+    - config: Default=YES MaxTime=INFINITE State=UP PriorityTier=10
+      isAll: false
+      name: main
+      nodeSetRefs:
+        - worker-gpu
   #    - PartitionName=low_priority Nodes=low_priority Default=YES MaxTime=INFINITE State=UP PriorityTier=1
   #    - PartitionName=high_priority  Nodes=high_priority Default=NO MaxTime=INFINITE State=UP PriorityTier=2
   # If Nodes present, they must not contain node names: use only nodeset values, "ALL" or "".
@@ -33,7 +35,6 @@ partitionConfiguration:
 
   # Partitions define partition configuration as a list of structured Partition[s].
   # It is used when configType == "structured".
-  partitions: []
   # Example partitions (similar to default partitions):
   #  - name: "main"
   #    isAll: true
@@ -70,10 +71,10 @@ k8sNodeFilters:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-                - key: "nebius.com/node-group-id"
+                - key: "worker.fptcloud/pool"
                   operator: In
                   values:
-                    - "node-group-id-here"
+                    - "worker-loem5jrq"
     tolerations:
       - key: nvidia.com/gpu
         operator: Exists
@@ -84,10 +85,10 @@ k8sNodeFilters:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-                - key: "nebius.com/node-group-id"
+                - key: "worker.fptcloud/pool"
                   operator: In
                   values:
-                    - "node-group-id-here"
+                    - "worker-h4p83yf3"
 # Sources for the volumes used in Slurm node specifications
 # You can use existing pvc or create via helm if `createPVC: true`
 volumeSources:
@@ -141,13 +142,13 @@ slurmConfig:
   defMemPerNode: 0
   defCpuPerGPU: 4
   completeWait: 5
-  prolog: /opt/slurm_scripts/prolog.sh
-  epilog: /opt/slurm_scripts/epilog.sh
+  prolog: ''
+  epilog: ''
   taskPluginParam: ""
   maxJobCount: 20000
   minJobAge: 28800
   messageTimeout: 60
-  topologyPlugin: "topology/tree"
+  topologyPlugin: ""
   topologyParam: "SwitchAsNodeRank"
 # Topology contains topology-related parameters for Slurm.
 # Example for topology/block plugin:
@@ -178,7 +179,7 @@ plugStackConfig:
 
 slurmNodes:
   sssd:
-    enabled: false
+    enabled: true
     sssdDebugLevel: 0
     imagePullPolicy: "IfNotPresent"
     appArmorProfile: "unconfined"
@@ -211,7 +212,7 @@ slurmNodes:
     sssdConfSecretRefName: ""
     sssdLdapCAConfigMapRefName: ""
   accounting:
-    enabled: false
+    enabled: true
     k8sNodeFilterName: "no-gpu"
     # Controls if the pod containers can use the host user namespace
     # hostUsers: false
@@ -254,9 +255,9 @@ slurmNodes:
         timeoutSeconds: 1
       port: 6819
       resources:
-        cpu: "1000m"
-        memory: "3Gi"
-        ephemeralStorage: "10Gi"
+        cpu: "100m"
+        memory: "1Gi"
+        ephemeralStorage: "1Gi"
     munge:
       imagePullPolicy: "IfNotPresent"
       appArmorProfile: "unconfined"
@@ -286,13 +287,13 @@ slurmNodes:
         ephemeralStorage: "5Gi"
     customInitContainers: []
     externalDB:
-      enabled: false
-      # host: ""
+      enabled: true
+      host: "172.20.62.80"
       port: 3306
-      # user: ""
-      # passwordSecretKeyRef:
-      #   name: ""
-      #   key: ""
+      user: "admin"
+      passwordSecretKeyRef:
+        name: "db-password"
+        key: "password"
       # tls:
       #   serverCASecretRef: ""
       #   clientCertSecretRef: ""
@@ -443,7 +444,7 @@ slurmNodes:
           resources:
             requests:
               storage: 50Gi
-          storageClassName: "compute-csi-network-ssd-ext4"
+          storageClassName: "nfs-client"
       jail:
         volumeSourceName: "jail"
       customMounts: []
@@ -469,7 +470,7 @@ slurmNodes:
         #   endpoints: [jobs, nodes, partitions, scheduler]
         # endpoints: []
   login:
-    size: 2
+    size: 0
     k8sNodeFilterName: "no-gpu"
     # Controls if the pod containers can use the host user namespace
     # hostUsers: false
@@ -485,9 +486,9 @@ slurmNodes:
         failureThreshold: 3
       port: 22
       resources:
-        cpu: "3000m"
-        memory: "9Gi"
-        ephemeralStorage: "30Gi"
+        cpu: "100m"
+        memory: "1Gi"
+        ephemeralStorage: "3Gi"
       command: []
       args: []
     # Authorized keys required for SSH connection to Slurm login nodes
@@ -630,7 +631,7 @@ sConfigController:
   # Controls if the pod containers can use the host user namespace
   # hostUsers: false
   node:
-    k8sNodeFilterName: "system"
+    k8sNodeFilterName: "no-gpu"
     size: 1
   container:
     imagePullPolicy: "IfNotPresent"
@@ -688,63 +689,63 @@ slurmScripts:
   # Keys must match file names in slurm_scripts/
   builtIn:
     alloc_gpus_busy.drain.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     alloc_gpus_busy.undrain.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     alloc_mem_used.drain.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     alloc_mem_used.undrain.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     boot_disk_full.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     chmod_enroot_layers.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     cleanup_enroot.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     cleanup_scratch_data.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     drop_page_cache.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     drop_posix_shmem.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     gpu_health_check.py:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     job_tmpfs_delete.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     job_tmpfs_delete_leftover.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     job_tmpfs_recreate.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     map_job_dcgm.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
     nvme_raid_health.sh:
@@ -752,7 +753,7 @@ slurmScripts:
       customContent: null
       customConfig: null
     unmap_job_dcgm.sh:
-      enabled: true
+      enabled: false
       customContent: null
       customConfig: null
   extra: null

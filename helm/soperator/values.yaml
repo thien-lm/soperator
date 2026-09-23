@@ -35,10 +35,10 @@ controllerManager:
         drop:
           - ALL
     env:
-      isMariadbCrdInstalled: "false"
+      isMariadbCrdInstalled: "true"
       isOpentelemetryCollectorCrdInstalled: "false"
       isApparmorCrdInstalled: "false"
-      isPrometheusCrdInstalled: "false"
+      isPrometheusCrdInstalled: "true"
       slurmOperatorWatchNamespaces: '*'
       topologyLabelPrefix: "topology.nebius.com"
     image:
@@ -75,7 +75,7 @@ serviceMonitor:
 certManager:
   enabled: true
 kruise:
-  installOperator: false
+  installOperator: true
   manager:
     replicas: 1
   featureGates: "ImagePullJobGate=true,RecreatePodWhenChangeVCTInCloneSetGate=true,StatefulSetAutoResizePVCGate=true,StatefulSetAutoDeletePVC=true,PreDownloadImageForInPlaceUpdate=true,ResourceDistributionGate=true"

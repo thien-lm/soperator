@@ -3003,7 +3003,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "sum by (err_msg, exported_pod) (rate(DCGM_FI_DEV_XID_ERRORS{exported_pod=~\"$worker\",hpc_job=~\"$slurm_job\"}))",
+          "expr": "sum by (err_msg, exported_pod) (rate(DCGM_FI_DEV_XID_ERRORS{exported_pod=~\"$worker\",hpc_job=~\"$slurm_job\"}[$__rate_interval]))",
           "instant": false,
           "legendFormat": "{{exported_pod}}: {{err_msg}}",
           "range": true,

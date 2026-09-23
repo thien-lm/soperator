@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: jailedconfigs.slurm.nebius.ai
 spec:
   group: slurm.nebius.ai
@@ -85,32 +85,7 @@ spec:
                   the jailed config setup will error. Paths must be
                   absolute and may not contain the '.' or '..' segments
                 items:
-                  description: Maps a string key to a path within a volume.
-                  properties:
-                    key:
-                      description: key is the key to project.
-                      type: string
-                    mode:
-                      description: |-
-                        mode is Optional: mode bits used to set permissions on this file.
-                        Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.
-                        YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.
-                        If not specified, the volume defaultMode will be used.
-                        This might be in conflict with other options that affect the file
-                        mode, like fsGroup, and the result can be other mode bits set.
-                      format: int32
-                      type: integer
-                    path:
-                      description: |-
-                        path is the relative path of the file to map the key to.
-                        May not be an absolute path.
-                        May not contain the path element '..'.
-                        May not start with the string '..'.
-                      type: string
-                  required:
-                  - key
-                  - path
-                  type: object
+                  $ref: '#/definitions/k8s.io~1api~1core~1v1~0KeyToPath'
                 type: array
                 x-kubernetes-list-type: atomic
               updateActions:
@@ -128,8 +103,6 @@ spec:
                   type: string
                 type: array
                 x-kubernetes-list-type: atomic
-            required:
-            - configMap
             type: object
           status:
             description: status defines the observed state of JailedConfig
@@ -137,8 +110,16 @@ spec:
               conditions:
                 description: Current state of jailed config
                 items:
-                  description: Condition contains details for one aspect of the current
-                    state of this API Resource.
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource.\n---\nThis struct is intended for
+                    direct use as an array at the field path .status.conditions.  For
+                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
+                    observations of a foo's current state.\n\t    // Known .status.conditions.type
+                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
+                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
+                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
+                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
+                    \   // other fields\n\t}"
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -179,7 +160,12 @@ spec:
                       - Unknown
                       type: string
                     type:
-                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      description: |-
+                        type of condition in CamelCase or in foo.example.com/CamelCase.
+                        ---
+                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
+                        useful (see .node.status.conditions), the ability to deconflict is important.
+                        The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string

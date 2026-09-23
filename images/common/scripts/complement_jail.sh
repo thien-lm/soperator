@@ -160,6 +160,13 @@ mount_gpu_libs() {
     while IFS= read -r target; do
         # Only regular files carry content: directory mounts (driver procfs, app profiles)
         # and device/socket binds are attachment-only
+        # NVIDIA capability descriptors under /proc/driver/nvidia/capabilities/... are regular
+        # files that procfs reports with st_size=0 even when valid (e.g. the MIG gi*/access
+        # files), so lib_has_real_content's stat-size probe would false-positive on them;
+        # the bind mount is correct as long as the CLI returned success, so skip them.
+        case "${target}" in
+            "${jaildir}/proc/driver/nvidia/capabilities/"*) continue ;;
+        esac
         [ -f "${target}" ] || continue
         if ! lib_has_real_content "${target}"; then
             echo "[nvml] ANOMALY: ${target} shows no real content right after mounting, exiting so the container restarts"

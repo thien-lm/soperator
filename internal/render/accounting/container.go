@@ -125,6 +125,7 @@ func renderContainerDbwaiter(clusterName string, accounting *values.SlurmAccount
 			  fi
 			
 			  if mariadb \
+			    --skip-ssl \
 			    --connect-timeout="${CONNECT_TIMEOUT}" \
 			    -h "${HOST}" \
 			    -P "${PORT}" \

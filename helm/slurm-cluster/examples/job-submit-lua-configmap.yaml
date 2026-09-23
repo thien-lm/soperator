@@ -1,0 +1,97 @@
+# Sample ConfigMap shipping a Slurm job_submit.lua plugin script.
+#
+# Usage:
+#   1. Edit job_submit.lua below to match your site policy.
+#   2. Apply in the cluster namespace:
+#        kubectl -n <ns> apply -f helm/slurm-cluster/examples/job-submit-lua-configmap.yaml
+#   3. Reference it from values.yaml:
+#
+#        volumeSources:
+#          - name: job-submit-script
+#            configMap:
+#              name: slurm-job-submit-lua
+#
+#        controller:
+#          volumes:
+#            customMounts:
+#              # NOTE: on the controller (and login/worker), /etc/slurm is a
+#              # symlink to /mnt/jail/etc/slurm created by the entrypoint.
+#              # Mount under the real jail path so the subPath file lands
+#              # correctly and the mount isn't shadowed/fought by the
+#              # entrypoint's `rm -rf /etc/slurm && ln -s /mnt/jail/etc/slurm`.
+#              - name: job-submit-script
+#                mountPath: /mnt/jail/etc/slurm/job_submit.lua
+#                subPath: job_submit.lua
+#                readOnly: true
+#                volumeSourceName: job-submit-script
+#
+#        customSlurmConfig: |
+#          JobSubmitPlugins=lua
+#
+#   4. helm upgrade -n <ns> slurm-cluster ./helm/slurm-cluster -f values.yaml
+#
+# Notes:
+# - `subPath: job_submit.lua` is required so the ConfigMap mounts as a single
+#   file inside /etc/slurm/ instead of shadowing the whole directory.
+# - JobSubmitPlugins runs on slurmctld (the controller), so the mount goes
+#   under `controller.volumes.customMounts` only.
+# - This script rejects jobs whose `--mem=0` (unspecified memory) logs a
+#   declaration and otherwise passes the job through unchanged. Replace the
+#   body with your site logic.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: slurm-job-submit-lua
+  # namespace: <your-namespace>
+  labels:
+    app.kubernetes.io/name: slurm-cluster
+    app.kubernetes.io/component: controller
+data:
+  job_submit.lua: |
+    -- Slurm job_submit.lua plugin
+    -- Runs on job submission and update via slurmctld.
+    -- Docs: https://slurm.schedmd.com/job_submit_lua.html
+
+    function slurm_job_submit(job_desc, part_list, submit_uid)
+        return _process(job_desc, submit_uid)
+    end
+
+    function slurm_job_modify(job_desc, job_ptr, part_list, modify_uid)
+        return _process(job_desc, modify_uid)
+    end
+
+    -- Shared logic for both submit and modify paths.
+    function _process(job_desc, uid)
+        -- Example 1: require an explicit memory request.
+        -- `--mem=0` means "all memory on a node"; reject it to force users
+        -- to specify memory, preventing accidental whole-node grabs.
+        if job_desc.min_memory == 0 then
+            slurm.log_user("Error: please specify --mem explicitly (0 is not allowed)")
+            return slurm.ERROR
+        end
+
+        -- Example 2: log every submission for audit.
+        slurm.log_info(string.format(
+            "job_submit: user=%u account=%s partition=%s job_name=%s nodes=%u",
+            uid,
+            tostring(job_desc.account),
+            tostring(job_desc.partition),
+            tostring(job_desc.name),
+            job_desc.min_nodes
+        ))
+
+        -- Pass through unchanged.
+        return slurm.SUCCESS
+    end
+
+    -- Optional: called once when slurmctld loads the plugin.
+    function slurm_init()
+        slurm.log_info("job_submit.lua loaded")
+        return slurm.SUCCESS
+    end
+
+    -- Optional: called once when slurmctld unloads the plugin.
+    function slurm_fini()
+        slurm.log_info("job_submit.lua unloaded")
+        return slurm.SUCCESS
+    end
