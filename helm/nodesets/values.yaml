@@ -87,7 +87,7 @@ nodesets:
       static: "State=UNKNOW CPUs=16 Boards=1 SocketsPerBoard=16 CoresPerSocket=1 ThreadsPerCore=1 RealMemory=102400 Gres=gpu:nvidia_h100_80gb_hbm3:1"
       # Dynamic string to be added to the Node's configuration
       # Optional
-      dynamic: "InstanceId={{ .PodName }}"
+      # dynamic: "InstanceId={{ .PodName }}"
       # GRESConfig strings to be added to the Node's configuration
       # Optional, defaults to empty list
       gresConfig:
