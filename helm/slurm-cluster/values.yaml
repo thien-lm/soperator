@@ -689,31 +689,31 @@ slurmScripts:
   # Keys must match file names in slurm_scripts/
   builtIn:
     alloc_gpus_busy.drain.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     alloc_gpus_busy.undrain.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     alloc_mem_used.drain.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     alloc_mem_used.undrain.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     boot_disk_full.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     chmod_enroot_layers.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     cleanup_enroot.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     cleanup_scratch_data.sh:
@@ -721,39 +721,39 @@ slurmScripts:
       customContent: null
       customConfig: null
     drop_page_cache.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     drop_posix_shmem.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     gpu_health_check.py:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     job_tmpfs_delete.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     job_tmpfs_delete_leftover.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     job_tmpfs_recreate.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     map_job_dcgm.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     nvme_raid_health.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     unmap_job_dcgm.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
   extra: null
