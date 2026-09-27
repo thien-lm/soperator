@@ -20,13 +20,13 @@ partitionConfiguration:
   # - default: generates 3 standard partitions (main, hidden, background)
   # - custom: uses raw partition configuration strings from rawConfig
   # - structured: enables NodeSet references and structured partition definitions
-  configType: structured
-  partitions:
-    - config: Default=YES MaxTime=INFINITE State=UP PriorityTier=10
-      isAll: false
-      name: main
-      nodeSetRefs:
-        - worker-gpu
+  configType: default
+  # partitions:
+  #   - config: Default=YES MaxTime=INFINITE State=UP PriorityTier=10
+  #     isAll: false
+  #     name: main
+  #     nodeSetRefs:
+  #       - worker-gpu
   #    - PartitionName=low_priority Nodes=low_priority Default=YES MaxTime=INFINITE State=UP PriorityTier=1
   #    - PartitionName=high_priority  Nodes=high_priority Default=NO MaxTime=INFINITE State=UP PriorityTier=2
   # If Nodes present, they must not contain node names: use only nodeset values, "ALL" or "".
@@ -71,10 +71,10 @@ k8sNodeFilters:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-                - key: "worker.fptcloud/pool"
+                - key: "worker.fptcloud/type"
                   operator: In
                   values:
-                    - "worker-loem5jrq"
+                    - "gpu"
     tolerations:
       - key: nvidia.com/gpu
         operator: Exists
@@ -85,10 +85,10 @@ k8sNodeFilters:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-                - key: "worker.fptcloud/pool"
+                - key: "worker.fptcloud/type"
                   operator: In
                   values:
-                    - "worker-h4p83yf3"
+                    - "gpu"
 # Sources for the volumes used in Slurm node specifications
 # You can use existing pvc or create via helm if `createPVC: true`
 volumeSources:
@@ -142,8 +142,8 @@ slurmConfig:
   defMemPerNode: 0
   defCpuPerGPU: 4
   completeWait: 5
-  prolog: ''
-  epilog: ''
+  prolog: '/opt/slurm_scripts/prolog.sh'
+  epilog: '/opt/slurm_scripts/epilog.sh'
   taskPluginParam: ""
   maxJobCount: 20000
   minJobAge: 28800
@@ -155,8 +155,10 @@ slurmConfig:
 # topology:
 #   blockSize: 18
 topology: null
-customSlurmConfig: ""
-customCgroupConfig: ""
+customSlurmConfig: |
+    JobSubmitPlugins=lua
+customCgroupConfig: |
+    CgroupPlugin=cgroup/v2
 mpiConfig:
   pmixEnv: "OMPI_MCA_btl_tcp_if_include=eth0"
 plugStackConfig:
@@ -209,7 +211,7 @@ slurmNodes:
       cpu: "200m"
       memory: "500Mi"
       ephemeralStorage: "5Gi"
-    sssdConfSecretRefName: ""
+    sssdConfSecretRefName: "ldap-sssd-conf"
     sssdLdapCAConfigMapRefName: ""
   accounting:
     enabled: true
@@ -233,13 +235,13 @@ slurmNodes:
       archiveUsage: "yes"
       debugLevel: "info"
       tcpTimeout: 2
-      purgeEventAfter: "1month"
+      purgeEventAfter: "12month"
       purgeJobAfter: "12month"
-      purgeResvAfter: "1month"
-      purgeStepAfter: "1month"
-      purgeSuspendAfter: "1month"
+      purgeResvAfter: "12month"
+      purgeStepAfter: "12month"
+      purgeSuspendAfter: "12month"
       purgeTXNAfter: "12month"
-      purgeUsageAfter: "24month"
+      purgeUsageAfter: "36month"
     slurmdbd:
       imagePullPolicy: "IfNotPresent"
       appArmorProfile: "unconfined"
@@ -255,9 +257,9 @@ slurmNodes:
         timeoutSeconds: 1
       port: 6819
       resources:
-        cpu: "100m"
-        memory: "1Gi"
-        ephemeralStorage: "1Gi"
+        cpu: "1000m"
+        memory: "3Gi"
+        ephemeralStorage: "10Gi"
     munge:
       imagePullPolicy: "IfNotPresent"
       appArmorProfile: "unconfined"
@@ -444,7 +446,7 @@ slurmNodes:
           resources:
             requests:
               storage: 50Gi
-          storageClassName: "nfs-client"
+          storageClassName: "vsf"
       jail:
         volumeSourceName: "jail"
       customMounts: []
@@ -470,7 +472,7 @@ slurmNodes:
         #   endpoints: [jobs, nodes, partitions, scheduler]
         # endpoints: []
   login:
-    size: 0
+    size: 1
     k8sNodeFilterName: "no-gpu"
     # Controls if the pod containers can use the host user namespace
     # hostUsers: false
@@ -486,15 +488,14 @@ slurmNodes:
         failureThreshold: 3
       port: 22
       resources:
-        cpu: "100m"
-        memory: "1Gi"
-        ephemeralStorage: "3Gi"
+        cpu: "3000m"
+        memory: "64Gi"
+        ephemeralStorage: "30Gi"
       command: []
       args: []
     # Authorized keys required for SSH connection to Slurm login nodes
     sshRootPublicKeys:
-      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKzxkjzPQ4EyZSjan4MLGFSA18idpZicoKW7Hfff username1"
-      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICL8scMKnwu+Y9S6XDACacZ54+qu+YRo2y4Ieddd username2"
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP64B8oQ4Z051O9O6Y3+1tAIFiKjHe769WgkljUYn79L v.tuanhm15@vinsmartfuture.tech"
     # Either `LoadBalancer` or `NodePort`
     sshdServiceType: "LoadBalancer"
     # Could be needed in case of sshdServiceType == `LoadBalancer`
@@ -506,7 +507,11 @@ slurmNodes:
     # Required in case of sshdServiceType == `NodePort`
     sshdServiceNodePort: 30022
     # Annotations to be configure on login service
-    sshdServiceAnnotations: {}
+    sshdServiceAnnotations: 
+      loadbalancer.fptcloud.com/timeout-client-data: '500000000'
+      loadbalancer.fptcloud.com/timeout-member-connect: '500000000'
+      loadbalancer.fptcloud.com/timeout-member-data: '500000000'
+      service.beta.kubernetes.io/fpt-load-balancer-internal: 'true'
     munge:
       imagePullPolicy: "IfNotPresent"
       appArmorProfile: "unconfined"
@@ -540,11 +545,10 @@ slurmNodes:
     volumes:
       jail:
         volumeSourceName: "jail"
-      jailSubMounts: []
-      # jailSubMounts:
-      #   - name: "mlcommons-sd-bench-data"
-      #     mountPath: "/mlperf-sd"
-      #     volumeSourceName: "mlperf-sd"
+      jailSubMounts:
+        - name: "data-001"
+          mountPath: "/mnt/data-001"
+          volumeSourceName: "data-001"
       customMounts: []
   exporter:
     enabled: true
@@ -602,11 +606,11 @@ slurmNodes:
       jail:
         volumeSourceName: "jail"
   rest:
-    enabled: false
+    enabled: true
     size: 2
     k8sNodeFilterName: "no-gpu"
     # Controls if the pod containers can use the host user namespace
-    # hostUsers: false
+    # hostUsers: true
     threadCount: 3
     maxConnections: 10
     rest:
@@ -664,19 +668,19 @@ sConfigController:
     # This field is required in the SlurmCluster CR - it will be automatically populated from this value
     name: ""
 images:
-  slurmctld: "cr.eu-north1.nebius.cloud/soperator/controller_slurmctld:4.1.8-slurm25.11.3"
-  slurmrestd: "cr.eu-north1.nebius.cloud/soperator/slurmrestd:4.1.8-slurm25.11.3"
-  slurmd: "cr.eu-north1.nebius.cloud/soperator/worker_slurmd:4.1.8-slurm25.11.3"
-  sshd: "cr.eu-north1.nebius.cloud/soperator/login_sshd:4.1.8-slurm25.11.3"
-  munge: "cr.eu-north1.nebius.cloud/soperator/munge:4.1.8-slurm25.11.3"
-  sssd: "cr.eu-north1.nebius.cloud/soperator/sssd:2.9.4-1-63"
+  slurmctld: "registry.fke.fptcloud.com/xplat-fke/controller_slurmctld:4.1.8-slurm25.11.3"
+  slurmrestd: "registry.fke.fptcloud.com/xplat-fke/slurmrestd:4.1.8-slurm25.11.3"
+  slurmd: "registry.fke.fptcloud.com/xplat-fke/worker_slurmd:4.1.8-slurm25.11.3"
+  sshd: "registry.fke.fptcloud.com/xplat-fke/login_sshd:4.1.8-slurm25.11.3"
+  munge: "registry.fke.fptcloud.com/xplat-fke/munge:4.1.8-slurm25.11.3"
+  sssd: "registry.fke.fptcloud.com/xplat-fke/sssd:2.9.4-1-63"
   populateJail: ""
-  populateJailRepository: "cr.eu-north1.nebius.cloud/soperator/populate_jail"
+  populateJailRepository: "registry.fke.fptcloud.com/xplat-fke/populate_jail"
   populateJailTag: "4.1.8-slurm25.11.3"
-  slurmdbd: "cr.eu-north1.nebius.cloud/soperator/controller_slurmdbd:4.1.8-slurm25.11.3"
-  soperatorExporter: "cr.eu-north1.nebius.cloud/soperator/soperator-exporter:4.1.8-slurm25.11.3"
-  sConfigController: "cr.eu-north1.nebius.cloud/soperator/sconfigcontroller:4.1.8"
-  mariaDB: "docker-registry1.mariadb.com/library/mariadb:12.1.2"
+  slurmdbd: "registry.fke.fptcloud.com/xplat-fke/controller_slurmdbd:4.1.8-slurm25.11.3"
+  soperatorExporter: "registry.fke.fptcloud.com/xplat-fke/soperator-exporter:4.1.8-slurm25.11.3"
+  sConfigController: "registry.fke.fptcloud.com/xplat-fke/sconfigcontroller:4.1.8"
+  mariaDB: "registry.fke.fptcloud.com/xplat-fke/mariadb:12.1.2"
 # Configuration for slurm scripts.
 slurmScripts:
   # Base scripts content can be overridden here
@@ -717,7 +721,7 @@ slurmScripts:
       customContent: null
       customConfig: null
     cleanup_scratch_data.sh:
-      enabled: false
+      enabled: true
       customContent: null
       customConfig: null
     drop_page_cache.sh:

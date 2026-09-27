@@ -11,7 +11,7 @@ controllerManager:
         drop:
           - ALL
     image:
-      repository: registry.k8s.io/kubebuilder/kube-rbac-proxy
+      repository: registry.fke.fptcloud.com/xplat-fke/kube-rbac-proxy
       tag: v0.15.0
     resources:
       limits:
@@ -42,8 +42,8 @@ controllerManager:
       slurmOperatorWatchNamespaces: '*'
       topologyLabelPrefix: "topology.nebius.com"
     image:
-      repository: cr.eu-north1.nebius.cloud/soperator/slurm-operator
-      tag: 4.1.8
+      repository: registry.fke.fptcloud.com/xplat-fke/slurm-operator
+      tag: 4.1.8-amd64
     imagePullPolicy: Always
     resources:
       limits:

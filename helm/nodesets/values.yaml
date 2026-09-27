@@ -24,18 +24,18 @@ priorityClasses:
 # Default container images used by NodeSets
 images:
   munge:
-    repository: "cr.eu-north1.nebius.cloud/soperator/munge"
+    repository: "registry.fke.fptcloud.com/xplat-fke/munge"
     tag: "4.1.8-slurm25.11.3"
   sssd:
-    repository: "cr.eu-north1.nebius.cloud/soperator/sssd"
+    repository: "registry.fke.fptcloud.com/xplat-fke/sssd"
     tag: "2.9.4-1-63"
   slurmd:
-    repository: "cr.eu-north1.nebius.cloud/soperator/worker_slurmd"
+    repository: "registry.fke.fptcloud.com/xplat-fke/worker_slurmd"
     tag: "4.1.8-slurm25.11.3"
 # NodeSets configuration
 # Each NodeSet defines a group of worker nodes with specific characteristics
 nodesets:
-  - name: worker-gpu
+  - name: worker-gpu-default
     # Annotations of the NodeSet CR
     # Optional, defaults to empty dict
     annotations: {}
@@ -84,7 +84,7 @@ nodesets:
         - "cuda"
       # Static string to be added to the Node's configuration
       # Optional
-      static: "State=UNKNOW CPUs=16 Boards=1 SocketsPerBoard=16 CoresPerSocket=1 ThreadsPerCore=1 RealMemory=102400 Gres=gpu:nvidia_h100_80gb_hbm3:1"
+      static: "State=UNKNOW CPUs=128 Boards=1 SocketsPerBoard=2 CoresPerSocket=32 ThreadsPerCore=2 RealMemory=192000 Gres=gpu:nvidia_h100_80gb_hbm3:1"
       # Dynamic string to be added to the Node's configuration
       # Optional
       # dynamic: "InstanceId={{ .PodName }}"
@@ -97,7 +97,7 @@ nodesets:
       # Each particular NodeSet's containers can have images other than default ones
       # Optional
       image:
-        repository: "cr.eu-north1.nebius.cloud/soperator/worker_slurmd"
+        repository: "registry.fke.fptcloud.com/xplat-fke/worker_slurmd"
         tag: "4.1.8-slurm25.11.3"
         pullPolicy: "IfNotPresent"
       customEnv:
@@ -110,22 +110,23 @@ nodesets:
       # readinessProbe: {}
       # Slurmd container resources
       resources:
-        cpu: "1000m"
-        memory: "100Gi"
-        ephemeralStorage: "5Gi"
+        cpu: "100"
+        memory: "1920Gi"
+        ephemeralStorage: "20000Gi"
         # Optional, required in case of nodesets[*].gpu.enabled
-        gpu: 1
+        gpu: 8
+        rdma/ib: 1
       # Slurmd container volumes
       volumes:
         # Worker spool volume
         # Could be any corev1.VolumeSource
         spool:
           volumeClaimTemplateSpec:
-            storageClassName: "nfs-client"
+            storageClassName: "default-vast"
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
-                storage: "12Gi"
+                storage: "40Gi"
         # Shared jail volume
         # Could be any corev1.VolumeSource
         jail:
@@ -134,27 +135,23 @@ nodesets:
         # Volumes being mounted inside Jail mount
         # Optional, defaults to empty list
         jailSubMounts:
-          - name: "tmp1"
-            mountPath: "/tmp/1"
-            # Optional
-            subPath: "1"
-            # Optional
-            readOnly: false
-            # Could be any corev1.VolumeSource
+          - mountPath: /opt/slurm_scripts
+            name: slurm-scripts
+            readOnly: true
             volumeSource:
-              emptyDir: {}
+              configMap:
+                defaultMode: 493
+                name: slurm-scripts
         # Volumes being mounted into container root FS
         # Optional, defaults to empty list
         customVolumeMounts:
-          - name: "foo"
-            mountPath: "/tmp/foo"
-            # Optional
-            subPath: "bar"
-            # Optional
-            readOnly: false
-            # Could be any corev1.VolumeSource
+          - mountPath: /opt/slurm_scripts
+            name: slurm-scripts-submount
+            readOnly: true
             volumeSource:
-              emptyDir: {}
+              configMap:
+                defaultMode: 493
+                name: slurm-scripts
         # Size of the shared memory
         # Optional
         sharedMemorySize: "64Gi"
@@ -178,7 +175,7 @@ nodesets:
       # Each particular NodeSet's containers can have images other than default ones
       # Optional
       image:
-        repository: "cr.eu-north1.nebius.cloud/soperator/munge"
+        repository: "registry.fke.fptcloud.com/xplat-fke/munge"
         # Optional
         tag: "4.1.8-slurm25.11.3"
         pullPolicy: "IfNotPresent"
@@ -212,7 +209,7 @@ nodesets:
       security:
         appArmorProfile: "unconfined"
         limitsConfig: ""
-    sssdConfSecretRefName: ""
+    sssdConfSecretRefName: "ldap-sssd-conf"
     sssdLdapCAConfigMapRefName: ""
     # Name of the custom SupervisorD config ConfigMap
     # Optional, defaults to empty string (use default SupervisorD config)
@@ -234,10 +231,10 @@ nodesets:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-                - key: "worker.fptcloud/pool"
+                - key: "worker.fptcloud/type"
                   operator: In
                   values:
-                    - "worker-loem5jrq"
+                    - "gpu"
     # A list of corev1.Toleration
     # Optional, defaults to empty list
     tolerations:

@@ -113,6 +113,9 @@ spec:
       {{- with .ephemeralStorage }}
       ephemeral-storage: {{ . | quote }}
       {{- end }}
+      {{- with (index $ "rdma/ib") }}
+      rdma/ib: {{ . | quote }}
+      {{- end }}
       {{- include "nodesets.resource.gpuFrom" (list $ns.gpu $ns.slurmd.resources) | nindent 6 }}
     {{- end }}
 
