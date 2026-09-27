@@ -6,7 +6,6 @@ metadata:
     app: nvidia-dcgm-exporter
   {{- include "soperator-dcgm-exporter.labels" . | nindent 4 }}
 spec:
-  runtimeClassName: nvidia
   selector:
     matchLabels:
       app: nvidia-dcgm-exporter
@@ -17,6 +16,7 @@ spec:
         app: nvidia-dcgm-exporter
       {{- include "soperator-dcgm-exporter.selectorLabels" . | nindent 8 }}
     spec:
+      runtimeClassName: nvidia
       containers:
       - env:
         - name: DCGM_EXPORTER_LISTEN

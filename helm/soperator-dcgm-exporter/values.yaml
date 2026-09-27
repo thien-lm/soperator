@@ -12,12 +12,12 @@ daemonSet:
   # init container
   toolkitValidation:
     image:
-      repository: cr.eu-north1.nebius.cloud/marketplace/nebius/nvidia-gpu-operator/image/gpu-operator-validator
-      tag: v24.6.2
+      repository: registry.fke.fptcloud.com/xplat-fke/gpu-operator
+      tag: v25.10.1
 
   nvidiaDcgmExporter:
     image:
-      repository: cr.eu-north1.nebius.cloud/soperator/dcgm-exporter
+      repository: registry.fke.fptcloud.com/xplat-fke/dcgm-exporter
       tag: 4.4.2-4.7.0-ubuntu22.04
     env:
       dcgmExporterListen: :9400
@@ -25,7 +25,7 @@ daemonSet:
     resources: {}
 
   nodeSelector:
-    nebius.com/gpu: "true"
+    worker.fptcloud/type: "gpu"
 
 serviceMonitor:
   scrapeInterval: 30s
