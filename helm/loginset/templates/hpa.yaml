@@ -1,0 +1,49 @@
+{{- range $i, $set := .Values.loginsets }}
+{{- with $set }}
+{{- $root := $ -}}
+{{- $setName := required ".Values.loginsets[*].name is required." .name -}}
+{{- $hpa := .hpa | default dict -}}
+{{- if $hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "loginset.statefulSetName" (list $root .) }}
+  namespace: {{ $root.Release.Namespace }}
+  {{- with (.annotations | default dict) }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "loginset.setLabels" (list $root .) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps.kruise.io/v1beta1
+    kind: StatefulSet
+    name: {{ include "loginset.statefulSetName" (list $root .) }}
+  minReplicas: {{ $hpa.minReplicas | default 1 }}
+  maxReplicas: {{ required ".Values.loginsets[*].hpa.maxReplicas is required when hpa.enabled is true." $hpa.maxReplicas }}
+  metrics:
+    {{- if $hpa.metrics }}
+    {{- toYaml $hpa.metrics | nindent 4 }}
+    {{- else }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 90
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 90
+    {{- end }}
+  {{- with $hpa.behavior }}
+  behavior:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,27 @@
+{{- range $i, $set := .Values.loginsets }}
+{{- with $set }}
+{{- $root := $ -}}
+{{- $setName := required ".Values.loginsets[*].name is required." .name -}}
+{{- if $i }}
+---
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "loginset.headlessServiceName" (list $root .) }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "loginset.setLabels" (list $root .) | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    {{- include "loginset.setSelectorLabels" (list $root .) | nindent 4 }}
+  ports:
+    - name: sshd
+      port: {{ .sshd.port | default 22 }}
+      targetPort: sshd
+      protocol: TCP
+{{- end }}
+{{- end }}

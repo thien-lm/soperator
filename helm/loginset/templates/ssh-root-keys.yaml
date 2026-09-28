@@ -1,0 +1,20 @@
+{{- range $i, $set := .Values.loginsets }}
+{{- with $set }}
+{{- $root := $ -}}
+{{- if eq (include "loginset.useDefaultSshRootKeysCM" (list $root .)) "true" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "loginset.sshRootKeysCMName" (list $root .) }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "loginset.setLabels" (list $root .) | nindent 4 }}
+data:
+  authorized_keys: |
+    {{- range .sshRootPublicKeys | default list }}
+    {{ . }}
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

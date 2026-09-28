@@ -1,0 +1,39 @@
+{{- range $i, $set := .Values.loginsets }}
+{{- with $set }}
+{{- $root := $ -}}
+{{- $setName := required ".Values.loginsets[*].name is required." .name -}}
+{{- if $i }}
+---
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "loginset.sshdServiceName" (list $root .) }}
+  namespace: {{ $root.Release.Namespace }}
+  {{- with .sshdServiceAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "loginset.setLabels" (list $root .) | nindent 4 }}
+spec:
+  type: {{ .sshdServiceType | default "LoadBalancer" }}
+  selector:
+    {{- include "loginset.setSelectorLabels" (list $root .) | nindent 4 }}
+  {{- if and (eq (.sshdServiceType | default "LoadBalancer") "LoadBalancer") .sshdServiceLoadBalancerIP }}
+  loadBalancerIP: {{ .sshdServiceLoadBalancerIP | quote }}
+  {{- end }}
+  {{- if and (eq (.sshdServiceType | default "LoadBalancer") "LoadBalancer") .sshdServiceLoadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml .sshdServiceLoadBalancerSourceRanges | nindent 4 }}
+  {{- end }}
+  ports:
+    - name: sshd
+      port: {{ .sshd.port | default 22 }}
+      targetPort: sshd
+      protocol: TCP
+{{- if eq (.sshdServiceType | default "LoadBalancer") "NodePort" }}
+      nodePort: {{ required ".Values.loginsets[*].sshdServiceNodePort is required when sshdServiceType == `NodePort`." .sshdServiceNodePort }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,444 @@
+{{- range $i, $set := .Values.loginsets }}
+{{- with $set }}
+{{- $root := $ -}}
+{{- $setName := required ".Values.loginsets[*].name is required." .name -}}
+{{- $sshdImage := include "loginset.image" (list $root .sshd.image "sshd") -}}
+{{- $sshdPullPolicy := include "loginset.pullPolicy" (list .sshd.image "IfNotPresent") -}}
+{{- $mungeImage := include "loginset.image" (list $root .munge.image "munge") -}}
+{{- $mungePullPolicy := include "loginset.pullPolicy" (list .munge.image "IfNotPresent") -}}
+{{- $hpaEnabled := (.hpa | default dict).enabled | default false -}}
+{{- $sssd := .sssd | default dict -}}
+{{- $sssdEnabled := $sssd.enabled | default false -}}
+{{- $hasJailPVC := and (.volumes | default dict).jail ((.volumes | default dict).jail | default dict).volumeClaimTemplateSpec -}}
+{{- $mungeKeySecret := include "loginset.mungeKeySecretName" (list $root .) -}}
+{{- $sshdKeysSecret := include "loginset.sshdKeysSecretName" (list $root .) -}}
+{{- $securityLimitsCM := include "loginset.securityLimitsCMName" (list $root .) -}}
+{{- $sshdConfigsCM := include "loginset.sshdConfigsCMName" (list $root .) -}}
+{{- $sssdConfSecret := include "loginset.sssdConfSecretName" (list $root .) -}}
+{{- $sshdMemory := ((.sshd.resources | default dict).memory | default "64Gi") }}
+---
+apiVersion: apps.kruise.io/v1beta1
+kind: StatefulSet
+metadata:
+  name: {{ include "loginset.statefulSetName" (list $root .) }}
+  namespace: {{ $root.Release.Namespace }}
+  {{- with (.annotations | default dict) }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "loginset.setLabels" (list $root .) | nindent 4 }}
+spec:
+  podManagementPolicy: Parallel
+  serviceName: {{ include "loginset.headlessServiceName" (list $root .) }}
+  {{- if not $hpaEnabled }}
+  replicas: {{ .size | default 1 }}
+  {{- end }}
+  revisionHistoryLimit: 10
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      minReadySeconds: 0
+      partition: 0
+      podUpdatePolicy: ReCreate
+  selector:
+    matchLabels:
+      {{- include "loginset.setSelectorLabels" (list $root .) | nindent 6 }}
+  {{- if $hasJailPVC }}
+  volumeClaimTemplates:
+    - metadata:
+        name: jail
+        namespace: {{ $root.Release.Namespace }}
+        labels:
+          {{- include "loginset.setLabels" (list $root .) | nindent 10 }}
+      spec:
+        {{- toYaml .volumes.jail.volumeClaimTemplateSpec | nindent 8 }}
+  {{- end }}
+  volumeClaimUpdateStrategy:
+    type: OnPodRollingUpdate
+  template:
+    metadata:
+      labels:
+        {{- include "loginset.setLabels" (list $root .) | nindent 8 }}
+      annotations:
+        kubectl.kubernetes.io/default-container: sshd
+    spec:
+      {{- if hasKey . "hostUsers" }}
+      hostUsers: {{ .hostUsers }}
+      {{- end }}
+      {{- with .nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (.tolerations | default list) }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      priorityClassName: {{ .priorityClassName | default (printf "%s-slurm-login" (include "loginset.clusterName" $root)) | quote }}
+      dnsPolicy: ClusterFirst
+      dnsConfig:
+        searches:
+          - {{ printf "%s-nodeset-svc.%s.svc.cluster.local" (include "loginset.clusterName" $root) $root.Release.Namespace }}
+          - {{ printf "%s-login-%s-headless-svc.%s.svc.cluster.local" (include "loginset.clusterName" $root) .name $root.Release.Namespace }}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      securityContext: {}
+      schedulerName: default-scheduler
+      initContainers:
+        - name: munge
+          image: {{ $mungeImage | quote }}
+          imagePullPolicy: {{ $mungePullPolicy }}
+          {{- with .munge.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .munge.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .munge.customEnv }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          restartPolicy: Always
+          volumeMounts:
+            - name: munge-key
+              mountPath: /mnt/munge-key
+              readOnly: true
+            - name: munge-socket
+              mountPath: /run/munge
+          {{- with .munge.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .munge.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            capabilities:
+              add:
+                - SYS_ADMIN
+            appArmorProfile:
+              type: Unconfined
+          resources:
+            {{- include "loginset.resources" (list (.munge.resources | default dict) ((.munge.resources | default dict).cpuLimit)) | nindent 12 }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        {{- with (.customInitContainers | default list) }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if $sssdEnabled }}
+        - name: sssd
+          image: {{ include "loginset.image" (list $root $sssd.image "sssd") | quote }}
+          imagePullPolicy: {{ include "loginset.pullPolicy" (list $sssd.image "IfNotPresent") }}
+          {{- if or $sssd.command $sssd.args }}
+          {{- with $sssd.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $sssd.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- else }}
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - >-
+              mkdir -p /var/lib/sss/pipes/private
+              && chmod 700 /var/lib/sss/pipes/private
+              && exec /usr/sbin/sssd --interactive -d {{ $sssd.sssdDebugLevel | default 0 }} --logger=stderr
+          {{- end }}
+          {{- with $sssd.customEnv }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          restartPolicy: Always
+          volumeMounts:
+            - name: sssd-conf
+              mountPath: /etc/sssd
+              readOnly: true
+            - name: sssd-socket
+              mountPath: /var/lib/sss/pipes
+          {{- if ($set.sssdLdapCAConfigMapRefName | default "") }}
+            - name: sssd-ldap-ca
+              mountPath: /mnt/ldapCA
+              readOnly: true
+          {{- end }}
+          {{- if $sssd.livenessProbe }}
+          livenessProbe:
+            {{- toYaml $sssd.livenessProbe | nindent 12 }}
+          {{- else }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - test -S /var/lib/sss/pipes/nss && test -S /var/lib/sss/pipes/pam
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          {{- end }}
+          {{- if $sssd.readinessProbe }}
+          readinessProbe:
+            {{- toYaml $sssd.readinessProbe | nindent 12 }}
+          {{- else }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - test -S /var/lib/sss/pipes/nss && test -S /var/lib/sss/pipes/pam
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          {{- end }}
+          securityContext:
+            appArmorProfile:
+              type: Unconfined
+          resources:
+            {{- include "loginset.resources" (list ($sssd.resources | default dict) (($sssd.resources | default dict).cpuLimit)) | nindent 12 }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        {{- end }}
+      containers:
+        - name: sshd
+          image: {{ $sshdImage | quote }}
+          imagePullPolicy: {{ $sshdPullPolicy }}
+          {{- with .sshd.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .sshd.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: SLURM_CLUSTER_WITH_GPU
+              value: {{ $root.Values.clusterWithGPU | toString | quote }}
+            {{- with .sshd.customEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: sshd
+              containerPort: {{ .sshd.port | default 22 }}
+              protocol: TCP
+          volumeMounts:
+            - name: jail
+              mountPath: /mnt/jail
+            - name: munge-socket
+              mountPath: /run/munge
+            - name: security-limits
+              mountPath: /etc/security/limits.conf
+              subPath: limits.conf
+            - name: sshd-keys
+              mountPath: /etc/ssh/sshd_keys
+              readOnly: true
+            - name: ssh-root-keys
+              mountPath: /root/.ssh/authorized_keys
+              subPath: authorized_keys
+              readOnly: true
+            - name: in-memory
+              mountPath: /mnt/jail.upper/mnt/memory
+            - name: tmp-disk
+              mountPath: /tmp
+            - name: ssh-configs
+              mountPath: /mnt/ssh-configs
+              readOnly: true
+            {{- if $sssdEnabled }}
+            - name: sssd-socket
+              mountPath: /var/lib/sss/pipes
+            - name: sssd-conf
+              mountPath: /etc/sssd
+              readOnly: true
+            {{- end }}
+            {{- range ((.volumes | default dict).jailSubMounts | default list) }}
+            - name: {{ .name }}
+              mountPath: {{ printf "/mnt/jail.upper%s" .mountPath }}
+              {{- with .subPath }}
+              subPath: {{ . | quote }}
+              {{- end }}
+              {{- if hasKey . "readOnly" }}
+              readOnly: {{ .readOnly }}
+              {{- end }}
+            {{- end }}
+            {{- range ((.volumes | default dict).customMounts | default list) }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              {{- with .subPath }}
+              subPath: {{ . | quote }}
+              {{- end }}
+              {{- if hasKey . "readOnly" }}
+              readOnly: {{ .readOnly }}
+              {{- end }}
+            {{- end }}
+          {{- with .sshd.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{ $rt := (.resourceThresholds | default dict) -}}
+          {{- if (eq ($rt.enabled | default false) true) }}
+          {{- $memPct := $rt.memory | default 90 -}}
+          {{- $cpuPct := $rt.cpu | default 90 -}}
+          {{- $sample := 1 -}}
+          {{- if hasKey $rt "cpuSampleSeconds" -}}
+          {{- $sample = (int $rt.cpuSampleSeconds) -}}
+          {{- end -}}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - >
+                  set -e;
+                  rc=0;
+                  CG=/sys/fs/cgroup$(awk -F: '/^0::/{print $3}' /proc/self/cgroup);
+                  if [ ! -d "$CG" ]; then CG=/sys/fs/cgroup; fi;
+                  if [ -r "$CG/memory.current" ]; then
+                    mem_cur=$(cat "$CG/memory.current");
+                    mem_max=$(cat "$CG/memory.max" 2>/dev/null || echo max);
+                    if [ "$mem_max" != "max" ] && [ "$mem_max" -gt 0 ]; then
+                      mem_pct=$(( mem_cur * 100 / mem_max ));
+                      if [ "$mem_pct" -gt {{ $memPct }} ]; then
+                        echo "memory usage ${mem_pct}% > {{ $memPct }}% (cur=${mem_cur} max=${mem_max})";
+                        rc=1;
+                      fi;
+                    fi;
+                  fi;
+                  if [ -r "$CG/cpu.max" ] && [ "{{ $sample }}" -gt 0 ]; then
+                    cpu_max_line=$(cat "$CG/cpu.max");
+                    cpu_quota=$(echo "$cpu_max_line" | awk '{print $1}');
+                    if [ "$cpu_quota" != "max" ]; then
+                      u1=$(awk '/^usage_usec/{print $2}' "$CG/cpu.stat");
+                      sleep {{ $sample }};
+                      u2=$(awk '/^usage_usec/{print $2}' "$CG/cpu.stat");
+                      usage_delta=$(( u2 - u1 ));
+                      quota_usec=$(( cpu_quota * 10 ));
+                      if [ "$quota_usec" -gt 0 ]; then
+                        cpu_pct=$(( usage_delta * 100 / (quota_usec * {{ $sample }}) ));
+                        if [ "$cpu_pct" -gt {{ $cpuPct }} ]; then
+                          echo "cpu usage ${cpu_pct}% > {{ $cpuPct }}%";
+                          rc=1;
+                        fi;
+                      fi;
+                    fi;
+                  fi;
+                  exit $rc
+            {{- $rp := .sshd.readinessProbe | default dict }}
+            timeoutSeconds: {{ $rp.timeoutSeconds | default 2 }}
+            periodSeconds: {{ $rp.periodSeconds | default 60 }}
+            successThreshold: {{ $rp.successThreshold | default 1 }}
+            failureThreshold: {{ $rp.failureThreshold | default 3 }}
+          {{- else if .sshd.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .sshd.readinessProbe | nindent 12 }}
+          {{- end }}
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - SYS_ADMIN
+            appArmorProfile:
+              type: Unconfined
+          resources:
+            {{- include "loginset.resources" (list (.sshd.resources | default dict) ((.sshd.resources | default dict).cpuLimit)) | nindent 12 }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      volumes:
+        - name: munge-key
+          secret:
+            secretName: {{ $mungeKeySecret }}
+            items:
+              - key: munge.key
+                path: munge.key
+                mode: 0400
+            defaultMode: 0420
+        - name: munge-socket
+          emptyDir: {}
+        - name: security-limits
+          configMap:
+            name: {{ $securityLimitsCM }}
+            defaultMode: 0420
+        - name: sshd-keys
+          secret:
+            secretName: {{ $sshdKeysSecret }}
+            items:
+              - key: ssh_host_ecdsa_key
+                path: ssh_host_ecdsa_key
+                mode: 0600
+              - key: ssh_host_ecdsa_key.pub
+                path: ssh_host_ecdsa_key.pub
+                mode: 0644
+              - key: ssh_host_ed25519_key
+                path: ssh_host_ed25519_key
+                mode: 0600
+              - key: ssh_host_ed25519_key.pub
+                path: ssh_host_ed25519_key.pub
+                mode: 0644
+              - key: ssh_host_rsa_key
+                path: ssh_host_rsa_key
+                mode: 0600
+              - key: ssh_host_rsa_key.pub
+                path: ssh_host_rsa_key.pub
+                mode: 0644
+            defaultMode: 0420
+        - name: ssh-root-keys
+          configMap:
+            name: {{ include "loginset.sshRootKeysCMName" (list $root .) }}
+            defaultMode: 0600
+        - name: in-memory
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ $sshdMemory | quote }}
+        - name: tmp-disk
+          emptyDir: {}
+        - name: ssh-configs
+          configMap:
+            name: {{ $sshdConfigsCM }}
+            defaultMode: 0420
+        {{- if $sssdEnabled }}
+        - name: sssd-socket
+          emptyDir: {}
+        - name: sssd-conf
+          secret:
+            secretName: {{ $sssdConfSecret }}
+            defaultMode: 0600
+        {{- if ($set.sssdLdapCAConfigMapRefName | default "") }}
+        - name: sssd-ldap-ca
+          configMap:
+            name: {{ $set.sssdLdapCAConfigMapRefName }}
+            defaultMode: 0420
+        {{- end }}
+        {{- end }}
+        {{- if not $hasJailPVC }}
+        {{- with (.volumes | default dict).jail }}
+        - name: jail
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- end }}
+        {{- range ((.volumes | default dict).jailSubMounts | default list) }}
+        - name: {{ .name }}
+          {{- with .volumeSource }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- end }}
+        {{- range ((.volumes | default dict).customMounts | default list) }}
+        - name: {{ .name }}
+          {{- with .volumeSource }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- end }}
+{{- end }}
+{{- end -}}
