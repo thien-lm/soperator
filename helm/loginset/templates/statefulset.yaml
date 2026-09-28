@@ -310,9 +310,12 @@ spec:
                     mem_cur=$(cat "$CG/memory.current");
                     mem_max=$(cat "$CG/memory.max" 2>/dev/null || echo max);
                     if [ "$mem_max" != "max" ] && [ "$mem_max" -gt 0 ]; then
-                      mem_pct=$(( mem_cur * 100 / mem_max ));
+                      inactive_file=$(awk '/^inactive_file[[:space:]]/{print $2}' "$CG/memory.stat" 2>/dev/null || echo 0);
+                      mem_used=$(( mem_cur - inactive_file ));
+                      if [ "$mem_used" -lt 0 ]; then mem_used=0; fi;
+                      mem_pct=$(( mem_used * 100 / mem_max ));
                       if [ "$mem_pct" -gt {{ $memPct }} ]; then
-                        echo "memory usage ${mem_pct}% > {{ $memPct }}% (cur=${mem_cur} max=${mem_max})";
+                        echo "memory usage ${mem_pct}% > {{ $memPct }}% (cur=${mem_cur} inactive_file=${inactive_file} max=${mem_max})";
                         rc=1;
                       fi;
                     fi;

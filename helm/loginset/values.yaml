@@ -33,79 +33,31 @@ images:
 # Login sets configuration.
 # Each entry renders one StatefulSet, one sshd Service, one headless Service, and
 # (when hpa.enabled is true) one HorizontalPodAutoscaler.
-# This lets a single chart represent multiple sets of login nodes with independent
-# sizing, images, SSH exposures, and autoscaling.
 loginsets:
-  - name: login-default
-    # Annotations applied to the StatefulSet (and HPA when enabled).
-    # Optional, defaults to empty dict
+  - name: login-vin-ncai
     annotations: {}
-    # Labels applied to all rendered objects for this login set (merged with chart labels).
-    # Optional, defaults to empty dict
     labels: {}
-    # Number of login pod replicas.
-    # Ignored when hpa.enabled is true (HPA owns the replica count).
     size: 1
 
-    # --- Resource-usage readiness gate ---
-    # When enabled, the sshd readiness probe additionally checks cgroup v2
-    # memory and CPU usage against these thresholds. A pod exceeding either
-    # threshold is marked NotReady so the LoadBalancer stops sending new SSH
-    # connections to it (existing connections are unaffected).
-    #
-    # Memory is always checked (soperator sets a memory limit). CPU is only
-    # checked when sshd.resources.cpuLimit is set — without a limit the cgroup
-    # has no cpu.max to take a percentage of.
-    # Optional. Defaults shown.
     resourceThresholds:
       enabled: true
-      # Memory utilization threshold in percent (memory.current / memory.max).
-      memory: 80
-      # CPU utilization threshold in percent. Only applies when cpuLimit is set.
-      cpu: 80
-      # How long to sample CPU usage per probe, in seconds. Higher is more
-      # accurate but blocks the probe longer.
+      memory: 90
+      cpu: 90
       cpuSampleSeconds: 0
 
-    # --- Node placement ---
-    # Optional, defaults to empty dict
     nodeSelector: {}
-    # Affinity, as a corev1.Affinity spec. Cannot be combined with nodeSelector.
-    # Optional, defaults to empty dict
     affinity: {}
-    # A list of corev1.Toleration.
-    # Optional, defaults to empty list
     tolerations: []
-    # PriorityClass name to attach to the login pods.
-    # Optional, defaults to empty string (no priority class)
     priorityClassName: ""
-    # Whether the pod containers can use the host user namespace.
-    # Optional, defaults to unset (nil)
-    # hostUsers: false
 
-    # --- backing resource references ---
-    # When empty, these fall back to the names the soperator controller derives
-    # from .Values.clusterName (see the comment there).
-    # Name of the Secret holding the munge key.
     mungeKeySecretName: ""
-    # Name of the Secret holding the sshd host keys.
     sshdKeysSecretName: ""
-    # Name of the ConfigMap holding the ssh root authorized_keys.
-    # When non-empty, the chart renders a ConfigMap with this name populated from
-    # sshRootPublicKeys below. When empty, the name defaults to
-    # <cluster>-ssh-root-keys-<setName>.
-    # Set sshRootPublicKeysExternal: true to skip rendering and reference an
-    # existing ConfigMap (created elsewhere, e.g. by the soperator controller).
-    sshRootPublicKeysConfigMapName: "fpt-hpc-ssh-root-keys-login-default"
+    sshRootPublicKeysConfigMapName: "fpt-hpc-ssh-root-keys-login-vin-ncai"
     sshRootPublicKeysExternal: false
-    # Name of the ConfigMap holding the security limits.conf.
     securityLimitsConfigMapName: ""
-    # Name of the ConfigMap holding the sshd configs.
     sshdConfigMapName: ""
 
-    # --- sshd container ---
     sshd:
-      # Per-set image override. Optional; falls back to images.sshd.
       image:
         repository: ""
         tag: ""
@@ -118,45 +70,31 @@ loginsets:
         periodSeconds: 60
         successThreshold: 1
         failureThreshold: 3
-      # livenessProbe: {}
       port: 22
       resources:
         cpu: "1000m"
         memory: "8Gi"
         ephemeralStorage: "30Gi"
-        # Optional CPU limit. When set, emitted as limits.cpu; when unset, CPU is
-        # unbounded (mirrors soperator's CopyNonCPUResources).
         cpuLimit: "1000m"
       command: []
       args: []
       customEnv: []
 
-    # Authorized keys required for SSH connection to the Slurm login nodes.
-    # Rendered into the ssh-root-keys ConfigMap named after this login set.
     sshRootPublicKeys:
       - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP64B8oQ4Z051O9O6Y3+1tAIFiKjHe769WgkljUYn79L v.tuanhm15@vinsmartfuture.tech"
       - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFhrbZQaF3HYsbsxsKatv/YulgeQdV4vNsLE4nTv8mrr thienlm4@fpt.com.vn"
 
-    # Either `LoadBalancer` or `NodePort`.
     sshdServiceType: "ClusterIP"
-    # Could be needed in case of sshdServiceType == `LoadBalancer`
-    # sshdServiceLoadBalancerIP: "192.168.0.1"
     sshdServiceLoadBalancerIP: ""
-    # Source IP ranges allowed to access LoadBalancer (CIDR format)
-    # sshdServiceLoadBalancerSourceRanges: ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
     sshdServiceLoadBalancerSourceRanges: []
-    # Required in case of sshdServiceType == `NodePort`
     sshdServiceNodePort: 30022
-    # Annotations to be configured on the login service
     sshdServiceAnnotations:
       loadbalancer.fptcloud.com/timeout-client-data: '500000000'
       loadbalancer.fptcloud.com/timeout-member-connect: '500000000'
       loadbalancer.fptcloud.com/timeout-member-data: '500000000'
       service.beta.kubernetes.io/fpt-load-balancer-internal: 'true'
 
-    # --- munge container ---
     munge:
-      # Per-set image override. Optional; falls back to images.munge.
       image:
         repository: ""
         tag: ""
@@ -190,10 +128,8 @@ loginsets:
         ephemeralStorage: "5Gi"
         cpuLimit: ""
 
-    # --- Optional SSSD sidecar ---
     sssd:
       enabled: false
-      # Per-set image override. Optional; falls back to images.sssd.
       image:
         repository: ""
         tag: ""
@@ -206,29 +142,15 @@ loginsets:
         memory: "500Mi"
         ephemeralStorage: "5Gi"
         cpuLimit: ""
-      # livenessProbe: {}
-      # readinessProbe: {}
     sssdDebugLevel: 0
     sssdConfSecretRefName: ""
     sssdLdapCAConfigMapRefName: ""
 
-    # --- Volumes ---
     customInitContainers: []
     volumes:
-      # Jail data volume. Fields here are a corev1.VolumeSource (e.g.
-      # persistentVolumeClaim), inlined directly. Alternatively provide a
-      # volumeClaimTemplateSpec to create a PVC template.
       jail:
         persistentVolumeClaim:
           claimName: jail-pvc
-        # volumeClaimTemplateSpec:
-        #   storageClassName: "default"
-        #   accessModes: ["ReadWriteOnce"]
-        #   resources:
-        #     requests:
-        #       storage: "40Gi"
-      # Sub-mounts inside the jail volume. Each item is a corev1.VolumeMount plus an
-      # inline `volumeSource` (a corev1.VolumeSource) defining the backing volume.
       jailSubMounts:
         - mountPath: /home/home-001
           name: home-001
@@ -256,18 +178,10 @@ loginsets:
               claimName: data-002
       customMounts: []
 
-    # --- HorizontalPodAutoscaler for this login set ---
-    # When enabled, the HPA owns spec.replicas; do not also manage size manually.
     hpa:
-      # Whether to render an HPA for this login set.
-      # Optional, defaults to false
       enabled: true
-      # Minimum number of replicas.
       minReplicas: 1
-      # Maximum number of replicas.
-      maxReplicas: 3 
-      # Target metrics for the HPA. Each item is a corev1.MetricSpec.
-      # Defaults scale up when CPU or memory utilization exceeds 80%.
+      maxReplicas: 3
       metrics:
         - type: Resource
           resource:
@@ -281,5 +195,167 @@ loginsets:
             target:
               type: Utilization
               averageUtilization: 80
-      # Scaling behavior (corev1.HorizontalPodAutoscalerBehavior). Optional.
+      behavior: {}
+
+  - name: login-vin-udai
+    annotations: {}
+    labels: {}
+    size: 1
+
+    resourceThresholds:
+      enabled: true
+      memory: 80
+      cpu: 80
+      cpuSampleSeconds: 0
+
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+    priorityClassName: ""
+
+    mungeKeySecretName: ""
+    sshdKeysSecretName: ""
+    sshRootPublicKeysConfigMapName: "fpt-hpc-ssh-root-keys-login-vin-udai"
+    sshRootPublicKeysExternal: false
+    securityLimitsConfigMapName: ""
+    sshdConfigMapName: ""
+
+    sshd:
+      image:
+        repository: ""
+        tag: ""
+        pullPolicy: "IfNotPresent"
+      appArmorProfile: "unconfined"
+      readinessProbe:
+        tcpSocket:
+          port: 22
+        timeoutSeconds: 1
+        periodSeconds: 60
+        successThreshold: 1
+        failureThreshold: 3
+      port: 22
+      resources:
+        cpu: "1000m"
+        memory: "8Gi"
+        ephemeralStorage: "30Gi"
+        cpuLimit: "1000m"
+      command: []
+      args: []
+      customEnv: []
+
+    sshRootPublicKeys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP64B8oQ4Z051O9O6Y3+1tAIFiKjHe769WgkljUYn79L v.tuanhm15@vinsmartfuture.tech"
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFhrbZQaF3HYsbsxsKatv/YulgeQdV4vNsLE4nTv8mrr thienlm4@fpt.com.vn"
+
+    sshdServiceType: "ClusterIP"
+    sshdServiceLoadBalancerIP: ""
+    sshdServiceLoadBalancerSourceRanges: []
+    sshdServiceNodePort: 30022
+    sshdServiceAnnotations:
+      loadbalancer.fptcloud.com/timeout-client-data: '500000000'
+      loadbalancer.fptcloud.com/timeout-member-connect: '500000000'
+      loadbalancer.fptcloud.com/timeout-member-data: '500000000'
+      service.beta.kubernetes.io/fpt-load-balancer-internal: 'true'
+
+    munge:
+      image:
+        repository: ""
+        tag: ""
+        pullPolicy: "IfNotPresent"
+      appArmorProfile: "unconfined"
+      command: []
+      args: []
+      livenessProbe:
+        exec:
+          command:
+            - /bin/sh
+            - -c
+            - /usr/bin/munge -n > /dev/null && exit 0 || exit 1
+        timeoutSeconds: 1
+        periodSeconds: 10
+        successThreshold: 1
+        failureThreshold: 3
+      readinessProbe:
+        exec:
+          command:
+            - /bin/sh
+            - -c
+            - test -S /run/munge/munge.socket.2
+        timeoutSeconds: 1
+        periodSeconds: 10
+        successThreshold: 1
+        failureThreshold: 3
+      resources:
+        cpu: "500m"
+        memory: "500Mi"
+        ephemeralStorage: "5Gi"
+        cpuLimit: ""
+
+    sssd:
+      enabled: false
+      image:
+        repository: ""
+        tag: ""
+        pullPolicy: "IfNotPresent"
+      appArmorProfile: "unconfined"
+      command: []
+      args: []
+      resources:
+        cpu: "200m"
+        memory: "500Mi"
+        ephemeralStorage: "5Gi"
+        cpuLimit: ""
+    sssdDebugLevel: 0
+    sssdConfSecretRefName: ""
+    sssdLdapCAConfigMapRefName: ""
+
+    customInitContainers: []
+    volumes:
+      jail:
+        persistentVolumeClaim:
+          claimName: jail-pvc
+      jailSubMounts:
+        - mountPath: /home/home-001
+          name: home-001
+          readOnly: false
+          volumeSource:
+            persistentVolumeClaim:
+              claimName: home-001
+        - mountPath: /mnt/data-001
+          name: data-001
+          readOnly: false
+          volumeSource:
+            persistentVolumeClaim:
+              claimName: data-001
+        - mountPath: /home/home-002
+          name: home-002
+          readOnly: false
+          volumeSource:
+            persistentVolumeClaim:
+              claimName: home-002
+        - mountPath: /mnt/data-002
+          name: data-002
+          readOnly: false
+          volumeSource:
+            persistentVolumeClaim:
+              claimName: data-002
+      customMounts: []
+
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
+      metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: Utilization
+              averageUtilization: 80
+        - type: Resource
+          resource:
+            name: memory
+            target:
+              type: Utilization
+              averageUtilization: 80
       behavior: {}
