@@ -22,13 +22,15 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "VictoriaMetrics"
+          "uid": "${datasource}"
         },
         "enable": false,
-        "expr": "group by (node, pod) (\n  changes(\n      sum without (uid, pod_ip)(\n          kube_pod_info{pod=~\"worker-.*\", node!=\"\"}\n      )\n  ) > 0\n  and on (pod) \n  sum by (pod)(\n      kube_pod_info{pod=~\"worker-.*\", node!=\"\"}\n  )\n)",
+        "expr": "group by(node, pod) (\n  changes(sum without(uid, pod_ip)(kube_pod_info{pod=~\"worker-.*\", node!=\"\"})[$__rate_interval:1m]) > 0\n  and on (pod) \n  sum by(pod)(\n      kube_pod_info{pod=~\"worker-.*\", node!=\"\"}\n  )\n)",
         "filter": {
           "exclude": true,
-          "ids": [328]
+          "ids": [
+            328
+          ]
         },
         "hide": false,
         "iconColor": "red",
@@ -49,7 +51,9 @@
       "icon": "external link",
       "includeVars": true,
       "keepTime": true,
-      "tags": ["worker-stats"],
+      "tags": [
+        "worker-stats"
+      ],
       "targetBlank": true,
       "title": "Detailed Stats",
       "tooltip": "",
@@ -99,7 +103,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "description": "Avg of utilization across all selected workers and instances",
       "fieldConfig": {
@@ -145,7 +149,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["mean"],
+          "calcs": [
+            "mean"
+          ],
           "fields": "",
           "values": false
         },
@@ -158,7 +164,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg (\n  1 - rate(node_cpu_seconds_total{mode=\"idle\"}[1m])\n) * 100",
@@ -174,7 +180,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "description": "",
       "fieldConfig": {
@@ -228,7 +234,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["mean"],
+          "calcs": [
+            "mean"
+          ],
           "fields": "",
           "values": false
         },
@@ -240,7 +248,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg(\n    (\n        node_memory_MemTotal_bytes - \n        node_memory_MemFree_bytes - \n        node_memory_Buffers_bytes - \n        node_memory_Cached_bytes\n    ) / \n    node_memory_MemTotal_bytes{instance=~\"$ip\"}\n) * 100",
@@ -258,7 +267,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "description": "",
       "fieldConfig": {
@@ -312,7 +321,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -324,7 +335,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "(\n  sum(node_filesystem_size_bytes{device!=\"rootfs\",instance=~\"$ip\"}) - \n  sum(node_filesystem_avail_bytes{device!=\"rootfs\",instance=~\"$ip\"})\n) / \nsum(node_filesystem_size_bytes{device!=\"rootfs\",instance=~\"$ip\"})",
@@ -342,7 +354,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "description": "",
       "fieldConfig": {
@@ -400,7 +412,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["mean"],
+          "calcs": [
+            "mean"
+          ],
           "fields": "",
           "values": false
         },
@@ -412,7 +426,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg(DCGM_FI_DEV_GPU_UTIL{exported_pod=~\"$worker\"})",
@@ -430,7 +445,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -486,7 +501,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -498,7 +515,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "sum(DCGM_FI_DEV_POWER_USAGE{exported_pod=~\"$worker\"})",
@@ -516,7 +534,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "description": "GPU Shutdown Temp: 90 C<br>\nGPU Slowdown Temp: 87 C<br>\nGPU Max Operating Temp: 83 C<br>",
       "fieldConfig": {
@@ -570,7 +588,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -582,7 +602,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg(DCGM_FI_DEV_GPU_TEMP{exported_pod=~\"$worker\"})",
@@ -600,7 +621,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "description": "",
       "fieldConfig": {
@@ -654,7 +675,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -666,7 +689,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg(DCGM_FI_DEV_MEM_COPY_UTIL{exported_pod=~\"$worker\"})",
@@ -684,7 +708,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -731,7 +755,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -743,7 +769,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg(DCGM_FI_DEV_SM_CLOCK{exported_pod=~\"$worker\"}*1000000)",
@@ -761,7 +788,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -808,7 +835,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -820,7 +849,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg(DCGM_FI_DEV_MEM_CLOCK{exported_pod=~\"$worker\"}*1000000)",
@@ -876,7 +906,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "description": "",
       "fieldConfig": {
@@ -1089,11 +1119,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sort_by_label(\n    group by (node, pod) (\n        kube_pod_info{pod=~\"$worker\",node!=\"\"}\n    ),\n    \"pod\", \"node\"\n)",
+          "expr": "group by(node, pod) (\n    kube_pod_info{pod=~\"$worker\",node!=\"\"}\n)",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -1121,7 +1151,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1203,7 +1233,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [10, 10],
+                  "dash": [
+                    10,
+                    10
+                  ],
                   "fill": "dash"
                 }
               },
@@ -1237,7 +1270,9 @@
       "interval": "2m",
       "options": {
         "legend": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": false
@@ -1252,7 +1287,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "max(DCGM_FI_DEV_GPU_UTIL{exported_pod=~\"$worker\"})",
@@ -1266,7 +1302,8 @@
         },
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg(DCGM_FI_DEV_GPU_UTIL{exported_pod=~\"$worker\"})",
@@ -1280,7 +1317,8 @@
         },
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "min(DCGM_FI_DEV_GPU_UTIL{exported_pod=~\"$worker\"})",
@@ -1299,7 +1337,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1381,7 +1419,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [10, 10],
+                  "dash": [
+                    10,
+                    10
+                  ],
                   "fill": "dash"
                 }
               },
@@ -1423,7 +1464,9 @@
       "interval": "2m",
       "options": {
         "legend": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": false
@@ -1438,7 +1481,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "max(DCGM_FI_DEV_FB_USED{exported_pod=~\"$worker\"}/(DCGM_FI_DEV_FB_USED{exported_pod=~\"$worker\"}+DCGM_FI_DEV_FB_FREE{exported_pod=~\"$worker\"}))",
@@ -1452,7 +1496,8 @@
         },
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg(DCGM_FI_DEV_FB_USED{exported_pod=~\"$worker\"}/(DCGM_FI_DEV_FB_USED{exported_pod=~\"$worker\"}+DCGM_FI_DEV_FB_FREE{exported_pod=~\"$worker\"}))",
@@ -1466,7 +1511,8 @@
         },
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "min(DCGM_FI_DEV_FB_USED{exported_pod=~\"$worker\"}/(DCGM_FI_DEV_FB_USED{exported_pod=~\"$worker\"}+DCGM_FI_DEV_FB_FREE{exported_pod=~\"$worker\"}))",
@@ -1485,7 +1531,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1569,7 +1615,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [10, 10],
+                  "dash": [
+                    10,
+                    10
+                  ],
                   "fill": "dash"
                 }
               },
@@ -1618,7 +1667,9 @@
       "interval": "2m",
       "options": {
         "legend": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": false
@@ -1633,7 +1684,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "max (DCGM_FI_DEV_GPU_TEMP{exported_pod=~\"$worker\"})",
@@ -1647,7 +1699,8 @@
         },
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg (DCGM_FI_DEV_GPU_TEMP{exported_pod=~\"$worker\"})",
@@ -1661,7 +1714,8 @@
         },
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "min (DCGM_FI_DEV_GPU_TEMP{exported_pod=~\"$worker\"})",
@@ -1680,7 +1734,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1761,7 +1815,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [10, 10],
+                  "dash": [
+                    10,
+                    10
+                  ],
                   "fill": "dash"
                 }
               },
@@ -1811,7 +1868,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "max(1 - rate(node_cpu_seconds_total{mode=\"idle\", instance=~\"$ip\"}[$__rate_interval]))",
@@ -1823,7 +1880,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg(1 - rate(node_cpu_seconds_total{mode=\"idle\", instance=~\"$ip\"}[$__rate_interval]))",
@@ -1836,7 +1893,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "min(1 - rate(node_cpu_seconds_total{mode=\"idle\", instance=~\"$ip\"}[$__rate_interval]))",
@@ -1853,7 +1910,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1917,7 +1974,9 @@
       "id": 406,
       "options": {
         "legend": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": false
@@ -1932,7 +1991,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "sum(DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{exported_pod=~\"$worker\"} * 1979)",
@@ -1946,7 +2006,8 @@
         },
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "sum(DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{exported_pod=~\"$worker\"} * 989.7)",
@@ -1965,7 +2026,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2067,7 +2128,9 @@
       "id": 362,
       "options": {
         "legend": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": false
@@ -2082,7 +2145,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "sum (rate(node_infiniband_port_data_transmitted_bytes_total{instance=~\"$ip\"}[$__interval]))",
@@ -2096,7 +2160,8 @@
         },
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "sum (rate(node_infiniband_port_data_received_bytes_total{instance=~\"$ip\"}[$__interval]))",
@@ -2115,7 +2180,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2196,7 +2261,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [10, 10],
+                  "dash": [
+                    10,
+                    10
+                  ],
                   "fill": "dash"
                 }
               },
@@ -2253,7 +2321,8 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "max(\n    (\n        node_memory_MemTotal_bytes - \n        node_memory_MemFree_bytes - \n        node_memory_Buffers_bytes - \n        node_memory_Cached_bytes\n    )\n    /\n    node_memory_MemTotal_bytes{instance=~\"$ip\"}\n)",
@@ -2267,7 +2336,8 @@
         },
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "avg(\n    (\n        node_memory_MemTotal_bytes - \n        node_memory_MemFree_bytes - \n        node_memory_Buffers_bytes - \n        node_memory_Cached_bytes\n    )\n    /\n    node_memory_MemTotal_bytes{instance=~\"$ip\"}\n)",
@@ -2281,7 +2351,8 @@
         },
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "min(\n    (\n        node_memory_MemTotal_bytes - \n        node_memory_MemFree_bytes - \n        node_memory_Buffers_bytes - \n        node_memory_Cached_bytes\n    )\n    /\n    node_memory_MemTotal_bytes{instance=~\"$ip\"}\n)",
@@ -2313,7 +2384,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2381,7 +2452,9 @@
       "interval": "2m",
       "options": {
         "legend": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": false
@@ -2396,10 +2469,11 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg by (exported_pod) (DCGM_FI_DEV_GPU_UTIL{exported_pod=~\"$worker\"})",
+          "expr": "avg by(exported_pod) (DCGM_FI_DEV_GPU_UTIL{exported_pod=~\"$worker\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2415,7 +2489,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2483,7 +2557,9 @@
       "interval": "2m",
       "options": {
         "legend": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": false
@@ -2498,10 +2574,11 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg by (exported_pod) (DCGM_FI_DEV_FB_USED{exported_pod=~\"$worker\"}/(DCGM_FI_DEV_FB_USED{exported_pod=~\"$worker\"}+DCGM_FI_DEV_FB_FREE{exported_pod=~\"$worker\"}))",
+          "expr": "avg by(exported_pod) (DCGM_FI_DEV_FB_USED{exported_pod=~\"$worker\"}/(DCGM_FI_DEV_FB_USED{exported_pod=~\"$worker\"}+DCGM_FI_DEV_FB_FREE{exported_pod=~\"$worker\"}))",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2517,7 +2594,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2587,7 +2664,9 @@
       "interval": "2m",
       "options": {
         "legend": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": false
@@ -2602,10 +2681,11 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg by (exported_pod) (DCGM_FI_DEV_MEM_COPY_UTIL{exported_pod=~\"$worker\"})",
+          "expr": "avg by(exported_pod) (DCGM_FI_DEV_MEM_COPY_UTIL{exported_pod=~\"$worker\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2621,7 +2701,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2685,7 +2765,9 @@
       "interval": "2m",
       "options": {
         "legend": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": false
@@ -2699,10 +2781,11 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (exported_pod) (DCGM_FI_DEV_POWER_USAGE{exported_pod=~\"$worker\"})",
+          "expr": "sum by(exported_pod) (DCGM_FI_DEV_POWER_USAGE{exported_pod=~\"$worker\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2718,7 +2801,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2785,7 +2868,9 @@
       "interval": "2m",
       "options": {
         "legend": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": false
@@ -2799,10 +2884,11 @@
       "targets": [
         {
           "datasource": {
-            "uid": "VictoriaMetrics"
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg by (exported_pod) (DCGM_FI_DEV_GPU_TEMP{exported_pod=~\"$worker\"})",
+          "expr": "avg by(exported_pod) (DCGM_FI_DEV_GPU_TEMP{exported_pod=~\"$worker\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2818,7 +2904,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "VictoriaMetrics"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2913,10 +2999,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (err_msg, exported_pod) (rate(DCGM_FI_DEV_XID_ERRORS{exported_pod=~\"$worker\"}))",
+          "expr": "sum by(err_msg, exported_pod) (rate(DCGM_FI_DEV_XID_ERRORS{exported_pod=~\"$worker\"}[$__rate_interval]))",
           "instant": false,
           "legendFormat": "{{exported_pod}}: {{err_msg}}",
           "range": true,
@@ -2939,7 +3025,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -3020,10 +3106,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "VictoriaMetrics"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "avg(1 - rate(node_cpu_seconds_total{mode=\"idle\", instance=~\"$ip\"}[$__rate_interval])) by (instance)\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_move(kube_pod_info{pod=~\"worker.*\"}, \"node\", \"nodename\")",
+              "expr": "avg(1 - rate(node_cpu_seconds_total{mode=\"idle\", instance=~\"$ip\"}[$__rate_interval])) by(instance)\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_replace(kube_pod_info{pod=~\"worker.*\"}, \"nodename\", \"$1\", \"node\", \".*\")",
               "instant": false,
               "legendFormat": "{{pod}}",
               "range": true,
@@ -3036,7 +3122,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -3116,10 +3202,11 @@
           "targets": [
             {
               "datasource": {
-                "uid": "VictoriaMetrics"
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "(\n    node_memory_MemTotal_bytes - \n    node_memory_MemFree_bytes - \n    node_memory_Buffers_bytes - \n    node_memory_Cached_bytes\n)\n/\nnode_memory_MemTotal_bytes{instance=~\"$ip\"}\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_move(kube_pod_info{pod=~\"worker.*\"}, \"node\", \"nodename\")",
+              "expr": "(\n    node_memory_MemTotal_bytes - \n    node_memory_MemFree_bytes - \n    node_memory_Buffers_bytes - \n    node_memory_Cached_bytes\n)\n/\nnode_memory_MemTotal_bytes{instance=~\"$ip\"}\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_replace(kube_pod_info{pod=~\"worker.*\"}, \"nodename\", \"$1\", \"node\", \".*\")",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -3135,7 +3222,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -3220,7 +3307,9 @@
           "interval": "2m",
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "right",
               "showLegend": false
@@ -3234,10 +3323,11 @@
           "targets": [
             {
               "datasource": {
-                "uid": "VictoriaMetrics"
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (instance) (rate(node_disk_read_bytes_total{instance=~\"$ip\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_move(kube_pod_info{pod=~\"worker.*\"}, \"node\", \"nodename\")",
+              "expr": "sum by(instance) (rate(node_disk_read_bytes_total{instance=~\"$ip\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_replace(kube_pod_info{pod=~\"worker.*\"}, \"nodename\", \"$1\", \"node\", \".*\")",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -3248,10 +3338,11 @@
             },
             {
               "datasource": {
-                "uid": "VictoriaMetrics"
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (instance) (rate(node_disk_written_bytes_total{instance=~\"$ip\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_move(kube_pod_info{pod=~\"worker.*\"}, \"node\", \"nodename\")",
+              "expr": "sum by(instance) (rate(node_disk_written_bytes_total{instance=~\"$ip\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_replace(kube_pod_info{pod=~\"worker.*\"}, \"nodename\", \"$1\", \"node\", \".*\")",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -3267,7 +3358,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "description": "",
           "fieldConfig": {
@@ -3334,7 +3425,12 @@
           "interval": "2m",
           "options": {
             "legend": {
-              "calcs": ["mean", "lastNotNull", "max", "min"],
+              "calcs": [
+                "mean",
+                "lastNotNull",
+                "max",
+                "min"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": false
@@ -3349,10 +3445,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "VictoriaMetrics"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "(\n  sum by (instance, device) (node_filesystem_size_bytes{instance=~\"$ip\"}) - \n  sum by (instance, device) (node_filesystem_avail_bytes{instance=~\"$ip\"})\n) / \nsum by (instance, device) (node_filesystem_size_bytes{instance=~\"$ip\",device!~\"none|shm|tmpfs|cloud-metadata|accounting|.*vda15\"})\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_move(kube_pod_info{pod=~\"worker.*\"}, \"node\", \"nodename\")",
+              "expr": "(\n  sum by(instance, device) (node_filesystem_size_bytes{instance=~\"$ip\"}) - \n  sum by(instance, device) (node_filesystem_avail_bytes{instance=~\"$ip\"})\n) / \nsum by(instance, device) (node_filesystem_size_bytes{instance=~\"$ip\",device!~\"none|shm|tmpfs|cloud-metadata|accounting|.*vda15\"})\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_replace(kube_pod_info{pod=~\"worker.*\"}, \"nodename\", \"$1\", \"node\", \".*\")",
               "hide": false,
               "instant": false,
               "legendFormat": "{{device}} {{pod}}",
@@ -3366,7 +3462,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "description": "",
           "fieldConfig": {
@@ -3437,7 +3533,12 @@
           "interval": "2m",
           "options": {
             "legend": {
-              "calcs": ["mean", "lastNotNull", "max", "min"],
+              "calcs": [
+                "mean",
+                "lastNotNull",
+                "max",
+                "min"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": false
@@ -3452,10 +3553,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "VictoriaMetrics"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "avg by (instance, device) (\n  1 - \n  (\n    node_filesystem_files_free{instance=~\"$ip\",device!~'none|shm|tmpfs|cloud-metadata|accounting|.*vda15'}\n    /\n    node_filesystem_files{instance=~\"$ip\",device!~'none|shm|tmpfs|cloud-metadata|accounting|.*vda15'}\n  )\n)\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_move(kube_pod_info{pod=~\"worker.*\"}, \"node\", \"nodename\")",
+              "expr": "avg by(instance, device) (\n  1 - \n  (\n    node_filesystem_files_free{instance=~\"$ip\",device!~'none|shm|tmpfs|cloud-metadata|accounting|.*vda15'}\n    /\n    node_filesystem_files{instance=~\"$ip\",device!~'none|shm|tmpfs|cloud-metadata|accounting|.*vda15'}\n  )\n)\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_replace(kube_pod_info{pod=~\"worker.*\"}, \"nodename\", \"$1\", \"node\", \".*\")",
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
@@ -3485,7 +3586,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -3583,7 +3684,9 @@
           "interval": "2m",
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "list",
               "placement": "bottom",
               "showLegend": false
@@ -3597,10 +3700,11 @@
           "targets": [
             {
               "datasource": {
-                "uid": "VictoriaMetrics"
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (instance) (rate(node_network_transmit_bytes_total{instance=~\"$ip\",device=~\"eth.*\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_move(kube_pod_info{pod=~\"worker.*\"}, \"node\", \"nodename\")",
+              "expr": "sum by(instance) (rate(node_network_transmit_bytes_total{instance=~\"$ip\",device=~\"eth.*\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_replace(kube_pod_info{pod=~\"worker.*\"}, \"nodename\", \"$1\", \"node\", \".*\")",
               "format": "time_series",
               "hide": false,
               "interval": ".5m",
@@ -3611,10 +3715,11 @@
             },
             {
               "datasource": {
-                "uid": "VictoriaMetrics"
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (instance) (rate(node_network_receive_bytes_total{instance=~\"$ip\",device=~\"eth.*\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_move(kube_pod_info{pod=~\"worker.*\"}, \"node\", \"nodename\")",
+              "expr": "sum by(instance) (rate(node_network_receive_bytes_total{instance=~\"$ip\",device=~\"eth.*\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_replace(kube_pod_info{pod=~\"worker.*\"}, \"nodename\", \"$1\", \"node\", \".*\")",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -3630,7 +3735,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -3732,7 +3837,9 @@
           "interval": "2m",
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "list",
               "placement": "bottom",
               "showLegend": false
@@ -3746,10 +3853,11 @@
           "targets": [
             {
               "datasource": {
-                "uid": "VictoriaMetrics"
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (instance) (rate(node_infiniband_port_data_transmitted_bytes_total{instance=~\"$ip\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_move(kube_pod_info{pod=~\"worker.*\"}, \"node\", \"nodename\")",
+              "expr": "sum by(instance) (rate(node_infiniband_port_data_transmitted_bytes_total{instance=~\"$ip\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_replace(kube_pod_info{pod=~\"worker.*\"}, \"nodename\", \"$1\", \"node\", \".*\")",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -3760,10 +3868,11 @@
             },
             {
               "datasource": {
-                "uid": "VictoriaMetrics"
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (instance) (rate(node_infiniband_port_data_received_bytes_total{instance=~\"$ip\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_move(kube_pod_info{pod=~\"worker.*\"}, \"node\", \"nodename\")",
+              "expr": "sum by(instance) (rate(node_infiniband_port_data_received_bytes_total{instance=~\"$ip\"}[$__interval]))\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_replace(kube_pod_info{pod=~\"worker.*\"}, \"nodename\", \"$1\", \"node\", \".*\")",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -3779,7 +3888,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -3864,7 +3973,9 @@
           "interval": "2m",
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "list",
               "placement": "bottom",
               "showLegend": false
@@ -3878,10 +3989,11 @@
           "targets": [
             {
               "datasource": {
-                "uid": "VictoriaMetrics"
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (exported_pod) (DCGM_FI_PROF_PCIE_TX_BYTES{exported_pod=~\"$worker\"})",
+              "expr": "sum by(exported_pod) (DCGM_FI_PROF_PCIE_TX_BYTES{exported_pod=~\"$worker\"})",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -3892,10 +4004,11 @@
             },
             {
               "datasource": {
-                "uid": "VictoriaMetrics"
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (exported_pod) (DCGM_FI_PROF_PCIE_RX_BYTES{exported_pod=~\"$worker\"})",
+              "expr": "sum by(exported_pod) (DCGM_FI_PROF_PCIE_RX_BYTES{exported_pod=~\"$worker\"})",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -3911,7 +4024,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -3976,7 +4089,9 @@
           "interval": "2m",
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "list",
               "placement": "bottom",
               "showLegend": false
@@ -3990,10 +4105,11 @@
           "targets": [
             {
               "datasource": {
-                "uid": "VictoriaMetrics"
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "1e6*sum by (exported_pod) (DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL{exported_pod=~\"$worker\"})",
+              "expr": "1e6*sum by(exported_pod) (DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL{exported_pod=~\"$worker\"})",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -4009,7 +4125,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -4076,7 +4192,9 @@
           "interval": "2m",
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "list",
               "placement": "bottom",
               "showLegend": false
@@ -4090,10 +4208,11 @@
           "targets": [
             {
               "datasource": {
-                "uid": "VictoriaMetrics"
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (instance) (\n  rate({__name__=~\"node_infiniband_.*(error|downed|discards|dropped).*\", instance=~\"$ip\"}[$__interval])\n)\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_move(kube_pod_info{pod=~\"worker.*\"}, \"node\", \"nodename\")",
+              "expr": "sum by(instance) (\n  rate({__name__=~\"node_infiniband_.*(error|downed|discards|dropped).*\", instance=~\"$ip\"}[$__interval])\n)\n* on(instance) group_left(nodename) node_uname_info\n* on(nodename) group_left(pod) label_replace(kube_pod_info{pod=~\"worker.*\"}, \"nodename\", \"$1\", \"node\", \".*\")",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -4109,7 +4228,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "VictoriaMetrics"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -4176,7 +4295,9 @@
           "interval": "2m",
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "list",
               "placement": "bottom",
               "showLegend": false
@@ -4191,10 +4312,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "VictoriaMetrics"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (error) (\n    rate(\n        label_copy(\n            {__name__=~\"node_infiniband_.*(error|downed|discards|dropped).*\", instance=~\".*\"},\n            \"__name__\",\n            \"error\",\n        )[$__interval]\n    )\n)\n",
+              "expr": "sum by(error) (\n    label_replace(\n        rate({__name__=~\"node_infiniband_.*(error|downed|discards|dropped).*\", instance=~\".*\"}[$__interval]),\n        \"error\", \"$1\", \"__name__\", \".*\"\n    )\n)",
               "hide": false,
               "instant": false,
               "legendFormat": "__auto",
@@ -4213,14 +4334,39 @@
   "preload": false,
   "refresh": "",
   "schemaVersion": 40,
-  "tags": ["nebius", "soperator", "workers-overview"],
+  "tags": [
+    "nebius",
+    "soperator",
+    "workers-overview"
+  ],
   "templating": {
     "list": [
       {
+        "current": {
+          "text": "Prometheus",
+          "value": "Prometheus"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
         "allowCustomValue": false,
         "current": {
-          "text": ["All"],
-          "value": ["$__all"]
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "definition": "label_values(kube_node_labels{label_worker_fptcloud_pool!=\"\"},label_worker_fptcloud_pool)",
         "description": "For GB platforms",
@@ -4242,12 +4388,16 @@
         "allValue": "",
         "allowCustomValue": false,
         "current": {
-          "text": ["worker-rack0-0"],
-          "value": ["worker-rack0-0"]
+          "text": [
+            "worker-rack0-0"
+          ],
+          "value": [
+            "worker-rack0-0"
+          ]
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "VictoriaMetrics"
+          "uid": "${datasource}"
         },
         "definition": "label_values(slurm_node_info, node_name)",
         "description": "Select as many workers as you need to check their aggregate and separate stats in panels.",
@@ -4273,7 +4423,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "VictoriaMetrics"
+          "uid": "${datasource}"
         },
         "definition": "label_values(kube_pod_info{pod=~\"$worker\"},node)",
         "hide": 2,
@@ -4299,7 +4449,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "VictoriaMetrics"
+          "uid": "${datasource}"
         },
         "definition": "label_values(node_uname_info{container=\"node-exporter\", nodename=~\"$hostname\"},instance)",
         "hide": 2,

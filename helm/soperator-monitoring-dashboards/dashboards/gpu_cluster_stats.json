@@ -22,7 +22,8 @@
   "panels": [
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Number of compute instances (nodes) reporting metrics in this cluster.",
       "fieldConfig": {
@@ -59,7 +60,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -71,7 +74,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "count(count by (Hostname) (DCGM_FI_DEV_POWER_USAGE{}))",
+          "expr": "count(count by(Hostname) (DCGM_FI_DEV_POWER_USAGE{}))",
           "instant": true,
           "legendFormat": "",
           "range": false,
@@ -83,7 +86,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Total number of GPU devices reporting metrics in this cluster.",
       "fieldConfig": {
@@ -120,7 +124,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -144,7 +150,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Average number of GPUs with VRAM allocated above 100 MiB over the selected time range — proxy for GPUs running a workload.",
       "fieldConfig": {
@@ -177,7 +184,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -201,7 +210,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Average number of GPUs with VRAM at or below 100 MiB over the selected time range — no workload detected.",
       "fieldConfig": {
@@ -238,7 +248,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -261,7 +273,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Average SM (Streaming Multiprocessor) active fraction across all GPUs over the selected time range. 'Compute density' reflects how many SMs are scheduled with work — not how busy the GPU is overall. Typical healthy range for real ML workloads is 40–70%, driven by the natural mix of attention, GEMM, softmax, and comm kernels. See the GPU Busy % panel for the 'is anything running' signal.",
       "fieldConfig": {
@@ -304,7 +317,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -327,7 +342,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Sum of GPU power draw across all nodes in the cluster in kilowatts.",
       "fieldConfig": {
@@ -360,7 +376,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -435,7 +453,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Average, P95, and max SM active % across all GPUs in the cluster over time. 40–70% is typical for real mixed ML workloads at 15s resolution — do not treat <100% as a problem. Max line reveals stragglers: if max is high while avg is low, one node may be bottlenecking distributed training.",
       "fieldConfig": {
@@ -495,7 +514,10 @@
               {
                 "id": "custom.lineStyle",
                 "value": {
-                  "dash": [4, 4],
+                  "dash": [
+                    4,
+                    4
+                  ],
                   "fill": "dash"
                 }
               },
@@ -516,7 +538,10 @@
       "id": 7,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -556,7 +581,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Count of GPUs with VRAM > 100 MiB (in use) vs. ≤ 100 MiB (idle) over time. A sudden drop in 'In Use' indicates a job crash or node removal.",
       "fieldConfig": {
@@ -680,7 +706,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Average fraction of time a CUDA kernel was executing on each GPU (DCGM_FI_DEV_GPU_UTIL). This is the 'liveness' / 'not idle' signal — 100% means a kernel is always running, but says nothing about whether it's using the hardware efficiently. Sudden drops during training indicate NCCL timeouts, node issues, or checkpointing. Normal healthy training: 95–100%.",
       "fieldConfig": {
@@ -741,7 +768,10 @@
       "id": 24,
       "options": {
         "legend": {
-          "calcs": ["mean", "min"],
+          "calcs": [
+            "mean",
+            "min"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -774,7 +804,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Average fraction of time tensor core pipes were active (DCGM_FI_PROF_PIPE_TENSOR_ACTIVE). The single most actionable metric for LLM / transformer training: if this drops while SM Active stays up, the workload has regressed to non-tensor ops (e.g. unfused softmax, fp32 paths). Typical healthy range in bf16/fp16 LLM training: 15–50%. Much lower = fusion / precision opportunity.",
       "fieldConfig": {
@@ -835,7 +866,10 @@
       "id": 25,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -868,7 +902,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Average SM occupancy (DCGM_FI_PROF_SM_OCCUPANCY) — of the SMs that are active, how many warps they are actually running vs theoretical max. SM Active says an SM scheduled work; SM Occupancy says how full it was. Typical healthy range: 20–40%. Together with SM Active, this catches the '1 SM busy = high GPU_UTIL but nothing real happening' case described in the Trainy blog post.",
       "fieldConfig": {
@@ -929,7 +964,10 @@
       "id": 26,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -955,7 +993,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Total GPU power draw across all nodes in the cluster. Sudden drops during training typically indicate checkpointing or NCCL stalls. GPU power ≈ 80% of total server power.",
       "fieldConfig": {
@@ -1015,7 +1054,10 @@
       "id": 9,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -1041,7 +1083,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Total GPU frame buffer (VRAM) used across all GPUs in the cluster. Steady high VRAM with variable power/SM-active is a sign of idle-but-loaded GPUs.",
       "fieldConfig": {
@@ -1132,7 +1175,10 @@
       "id": 10,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -1165,7 +1211,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "SM active % for each node over time. Each line = one instance. Diverging lines reveal stragglers. Range 40–70% is typical. For clusters >128 nodes this panel is hidden in favor of the stat-grid variant below.",
       "fieldConfig": {
@@ -1242,7 +1289,11 @@
           }
         },
         "legend": {
-          "calcs": ["mean", "max", "min"],
+          "calcs": [
+            "mean",
+            "max",
+            "min"
+          ],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true
@@ -1256,7 +1307,7 @@
       "pluginVersion": "11.5.1",
       "targets": [
         {
-          "expr": "avg by (Hostname) (DCGM_FI_PROF_SM_ACTIVE{}) * 100",
+          "expr": "avg by(Hostname) (DCGM_FI_PROF_SM_ACTIVE{}) * 100",
           "instant": false,
           "legendFormat": "{{Hostname}}",
           "range": true,
@@ -1268,7 +1319,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "One tile per node, colored by average SM active % over the selected time range. 40–70% is normal for mixed ML workloads — use this view to spot outliers relative to the cluster, not to flag <100% as bad.",
       "fieldConfig": {
@@ -1316,7 +1368,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "limit": 500,
           "values": true
@@ -1328,7 +1382,7 @@
       "pluginVersion": "11.5.1",
       "targets": [
         {
-          "expr": "avg by (Hostname) (avg_over_time(DCGM_FI_PROF_SM_ACTIVE{}[$__range])) * 100",
+          "expr": "avg by(Hostname) (avg_over_time(DCGM_FI_PROF_SM_ACTIVE{}[$__range])) * 100",
           "instant": true,
           "legendFormat": "{{Hostname}}",
           "range": false,
@@ -1340,7 +1394,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Per-node Compute Density (SM Active %) over time. One row per node, averaged across the node's GPUs. Use this to spot stragglers during a training run — rows that go cool while peers stay warm indicate NCCL waits, dataloader stalls, or unhealthy GPUs. SM Active is preferred over GPU Util here because it reflects actual compute work, not just kernel presence.",
       "fieldConfig": {
@@ -1386,7 +1441,7 @@
           "color": "rgba(255,0,255,0.7)"
         },
         "filterValues": {
-          "le": 1e-9
+          "le": 1e-09
         },
         "legend": {
           "show": true
@@ -1408,7 +1463,7 @@
       "pluginVersion": "11.5.1",
       "targets": [
         {
-          "expr": "avg by (Hostname) (DCGM_FI_PROF_SM_ACTIVE{}) * 100",
+          "expr": "avg by(Hostname) (DCGM_FI_PROF_SM_ACTIVE{}) * 100",
           "instant": false,
           "legendFormat": "{{Hostname}}",
           "range": true,
@@ -1433,7 +1488,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Max and average GPU core temperature across the cluster. Sustained max above 80°C warrants investigation. Non-critical overheating increases InfiniBand bit error probability and can degrade performance before triggering shutdown.",
       "fieldConfig": {
@@ -1537,7 +1593,10 @@
       "id": 16,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -1570,7 +1629,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "Max and average GPU Memory temperature across the cluster. Sustained max above 80°C warrants investigation. Non-critical overheating increases InfiniBand bit error probability and can degrade performance before triggering shutdown.",
       "fieldConfig": {
@@ -1674,7 +1734,10 @@
       "id": 28,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -1712,7 +1775,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "description": "One tile per node, colored by max GPU temperature over the selected time range. Relative color scale — hottest node shows red even on an all-healthy cluster.",
       "fieldConfig": {
@@ -1755,7 +1819,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "limit": 500,
           "values": true
@@ -1767,7 +1833,7 @@
       "pluginVersion": "11.5.1",
       "targets": [
         {
-          "expr": "max by (Hostname) (max_over_time(DCGM_FI_DEV_GPU_TEMP{}[$__range]))",
+          "expr": "max by(Hostname) (max_over_time(DCGM_FI_DEV_GPU_TEMP{}[$__range]))",
           "instant": true,
           "legendFormat": "{{Hostname}}",
           "range": false,
@@ -1781,9 +1847,31 @@
   "preload": false,
   "refresh": "1m",
   "schemaVersion": 40,
-  "tags": ["nebius", "soperator", "cluster", "gpu"],
+  "tags": [
+    "nebius",
+    "soperator",
+    "cluster",
+    "gpu"
+  ],
   "templating": {
     "list": [
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "Prometheus"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
       {
         "allowCustomValue": false,
         "current": {
@@ -1791,7 +1879,8 @@
           "value": "4"
         },
         "datasource": {
-          "type": "prometheus"
+          "type": "prometheus",
+          "uid": "${datasource}"
         },
         "definition": "query_result(count(count by (Hostname) (DCGM_FI_DEV_POWER_USAGE{})))",
         "hide": 2,
@@ -1821,7 +1910,16 @@
     "to": "now"
   },
   "timepicker": {
-    "refresh_intervals": ["30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    "refresh_intervals": [
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
   },
   "timezone": "browser",
   "title": "GPU Cluster Stats",
